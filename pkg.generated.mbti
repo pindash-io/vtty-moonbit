@@ -1,0 +1,126 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "fundon/vtty"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const ACTION_CSI_DISPATCH : Int = 4
+
+pub const ACTION_ESC_DISPATCH : Int = 8
+
+pub const ACTION_EXECUTE : Int = 2
+
+pub const ACTION_HOOK : Int = 16
+
+pub const ACTION_NONE : Int = 0
+
+pub const ACTION_OSC_END : Int = 512
+
+pub const ACTION_OSC_PUT : Int = 256
+
+pub const ACTION_OSC_START : Int = 128
+
+pub const ACTION_PRINT : Int = 1
+
+pub const ACTION_PUT : Int = 32
+
+pub const ACTION_UNHOOK : Int = 64
+
+pub fn action_has(Int, Int) -> Bool
+
+pub fn c1_in_sequence(ParseState, Int) -> (Int, ParseState)
+
+pub fn c1_transition(Int) -> (Int, ParseState)
+
+pub fn cp_to_char(Int) -> Char
+
+pub fn decode_validated(ArrayView[Int], Int) -> (Int, Int)
+
+pub fn first_esc(ArrayView[Int]) -> Int
+
+pub fn first_non_printable(ArrayView[Int]) -> Int
+
+pub fn transition(ParseState, Int) -> (Int, ParseState)
+
+pub fn utf8_expected(Int) -> Int
+
+pub fn utf8_lead_cp(Int) -> Int
+
+pub fn utf8_second_byte_valid(Int, Int) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) enum Event {
+  Print(Char)
+  Execute(Int)
+  CsiDispatch(Array[Int], Array[Int], Int)
+  EscDispatch(Array[Int], Int)
+  DcsHook(Array[Int], Array[Int], Int)
+  DcsPut(Int)
+  DcsUnhook
+  OscDispatch(Array[Array[Int]], Bool)
+} derive(Eq, @debug.Debug)
+
+pub enum ParseState {
+  Ground
+  Escape
+  EscapeIntermediate
+  CsiEntry
+  CsiParam
+  CsiIntermediate
+  CsiIgnore
+  OscString
+  DcsEntry
+  DcsParam
+  DcsIntermediate
+  DcsPassthrough
+  DcsIgnore
+  SosPmApcString
+} derive(Eq, @debug.Debug)
+
+pub struct Parser {
+  mut state : ParseState
+  mut params : Array[Int]
+  mut params_len : Int
+  mut param : Int
+  mut param_empty : Bool
+  mut sep : Int
+  mut intermediates : Array[Int]
+  mut intermediates_len : Int
+  mut ignore : Bool
+  mut partial : Int
+  mut partial_need : Int
+  mut osc : Array[Int]
+  mut osc_starts : Array[Int]
+  mut simd : Bool
+}
+pub fn[P : Perform] Parser::advance(Self, P, ArrayView[Int]) -> Unit
+pub fn Parser::new() -> Self
+pub fn Parser::with_simd() -> Self
+
+pub struct Recording {
+  events : Array[Event]
+}
+pub fn Recording::events(Self) -> Array[Event]
+pub fn Recording::new() -> Self
+pub impl Perform for Recording
+
+// Type aliases
+
+// Traits
+pub(open) trait Perform {
+  fn print(Self, Char) -> Unit = _
+  fn print_bytes(Self, ArrayView[Int]) -> Unit = _
+  fn print_codepoints(Self, ArrayView[Int]) -> Unit = _
+  fn execute(Self, Int) -> Unit = _
+  fn csi_dispatch(Self, ArrayView[Int], Int, ArrayView[Int], Int) -> Unit = _
+  fn esc_dispatch(Self, ArrayView[Int], Int) -> Unit = _
+  fn hook(Self, ArrayView[Int], ArrayView[Int], Int) -> Unit = _
+  fn put(Self, Int) -> Unit = _
+  fn put_slice(Self, ArrayView[Int]) -> Unit = _
+  fn unhook(Self) -> Unit = _
+  fn osc_dispatch(Self, Array[Array[Int]], Bool) -> Unit = _
+}
