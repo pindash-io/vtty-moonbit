@@ -1,0 +1,9 @@
+import {
+  "fundon/vtty",
+  "moonbitlang/async",
+  "moonbitlang/async/stdio",
+  "moonbit-community/pty",
+  "moonbit-community/tty",
+}
+
+pkgtype(kind: "executable")

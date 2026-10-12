@@ -1,0 +1,14 @@
+# MoonBit
+_build/
+.mooncakes/
+.moonagent/
+.repos/
+
+# macOS
+.DS_Store
+
+# clangd
+compile_flags.txt
+
+# VSCode
+.vscode/
