@@ -1,9 +1,8 @@
 // SIMD-accelerated byte-scan and UTF-8 decode helpers for the parser hot path
 // (via `@v128`, MoonBit's 128-bit SIMD intrinsics).
 
-///| Index of the first byte that is NOT printable ASCII (`0x20..=0x7e`; DEL
-
 ///|
+/// Index of the first byte that is NOT printable ASCII (`0x20..=0x7e`; DEL
 /// `0x7f` is a C0 control), or `bytes.length()` if every byte is printable.
 pub fn first_non_printable(bytes : ArrayView[Int]) -> Int {
   // Fast path: the next byte is usually the match on escape-dense streams.
@@ -62,11 +61,10 @@ pub fn first_esc(bytes : ArrayView[Int]) -> Int {
   n
 }
 
-///| Branchless decode of a UTF-8 code point already validated by the caller.
-
-///| Assumes `b[0]` is a 2/3/4-byte lead with its continuation bytes present.
-
 ///|
+/// Branchless decode of a UTF-8 code point already validated by the caller.
+///
+/// Assumes `b[0]` is a 2/3/4-byte lead with its continuation bytes present.
 /// Returns `(code_point, byte_length)`.
 pub fn decode_validated(b : ArrayView[Int], pos : Int) -> (Int, Int) {
   let b0 = b[pos]

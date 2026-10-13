@@ -1,7 +1,7 @@
-// Incremental UTF-8 decoding helpers for the byte parser.
+// Incremental UTF-8 decoding helpers.
 
 ///|
-/// Expected UTF-8 byte length for a lead byte (0 = invalid/continuation).
+/// Expected UTF-8 byte length for a lead byte (`0` = invalid/continuation).
 pub fn utf8_expected(lead : Int) -> Int {
   match lead {
     0x00..=0x7f => 1
@@ -12,9 +12,8 @@ pub fn utf8_expected(lead : Int) -> Int {
   }
 }
 
-///| Whether `second` is a valid second byte for a constrained 3/4-byte `lead`
-
 ///|
+/// Whether `second` is a valid second byte for a constrained 3/4-byte `lead`
 /// (non-shortest / non-surrogate / non-overlong rules).
 pub fn utf8_second_byte_valid(lead : Int, second : Int) -> Bool {
   match lead {

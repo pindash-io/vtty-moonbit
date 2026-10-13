@@ -1,9 +1,10 @@
-// The owned, trait-free event API: `Event` + `Recording`.
-
-///| A parsed escape-sequence event — the dispatch as data, instead of a
+// The owned event API: `Event` + `Recording`.
 
 ///|
-/// `Perform` callback. Useful for differential testing and simple consumers.
+/// A parsed escape-sequence event — the dispatch as data, instead of a
+/// `Perform` callback.
+///
+/// Useful for differential testing and simple consumers.
 pub(all) enum Event {
   Print(Char)
   Execute(Int)
@@ -21,10 +22,11 @@ pub extend Event with Eq::{equal, not_equal}
 ///|
 pub extend Event with @debug.Debug::{to_repr}
 
-///| Records parser events into an `Array[Event]` (the enum-based, trait-free
-
 ///|
-/// API). Allocates one `Event` per dispatch — for tests and tooling.
+/// Records parser events into an `Array[Event]` (the trait-free, enum-based
+/// API).
+///
+/// Allocates one `Event` per dispatch — for tests and tooling.
 pub struct Recording {
   events : Array[Event]
 }

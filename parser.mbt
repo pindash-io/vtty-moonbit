@@ -1,18 +1,19 @@
-// The DEC VT500 byte parser (scalar path).
+// The DEC VT500 byte parser.
 
-///|
+// Cap on CSI/DCS parameters (vte/rio-vt = 32).
 const MAX_PARAMS : Int = 32
 
-///|
+// Cap on CSI/DCS intermediates before a sequence is ignored.
 const MAX_INTERMEDIATES : Int = 2
 
-///|
+// Cap on OSC parameters (`;`-separated).
 const MAX_OSC_PARAMS : Int = 16
 
-///| A byte-input DEC VT500 terminal parser. Dispatch decoded events to a
-
 ///|
-/// `Perform` sink via `advance`; use `Recording` for the owned event API.
+/// A byte-input DEC VT500 terminal parser.
+///
+/// Dispatch decoded events to a `Perform` sink via `advance`, or collect
+/// owned events via `parse_events` / `Recording`.
 pub struct Parser {
   mut state : ParseState
   mut params : Array[Int]
@@ -52,7 +53,7 @@ pub fn Parser::new() -> Parser {
 }
 
 ///|
-/// Create a parser with the SIMD-accelerated printable-run scan enabled.
+/// Create a parser with the SIMD printable-run scan enabled.
 pub fn Parser::with_simd() -> Parser {
   let p = Parser::new()
   p.simd = true
@@ -60,10 +61,10 @@ pub fn Parser::with_simd() -> Parser {
 }
 
 ///|
-/// Parse `bytes` and return the decoded events as an owned `Array[Event]`.
+/// Parse `bytes`, returning the decoded events as an owned `Array[Event]`.
 ///
-/// Convenience wrapper for tests and tooling — allocates one `Event` per
-/// dispatch. Prefer `advance` with a `Perform` sink on the hot path.
+/// Allocates one `Event` per dispatch — for tests and tooling. Prefer
+/// `advance` with a `Perform` sink on the hot path.
 pub fn Parser::parse_events(
   self : Parser,
   bytes : ArrayView[Int],
@@ -160,11 +161,10 @@ fn[P : Perform] Parser::advance_ground(
   }
 }
 
-///| Decode one multi-byte UTF-8 code point starting at `bytes[i]` (a lead
-
-///| byte `>= 0xA0`), following W3C "Substitution of Maximal Subparts".
-
 ///|
+/// Decode one multi-byte UTF-8 code point starting at `bytes[i]` (a lead
+/// byte `>= 0xA0`), following W3C "Substitution of Maximal Subparts".
+///
 /// Returns the number of bytes consumed.
 fn[P : Perform] Parser::decode_utf8(
   self : Parser,
@@ -213,9 +213,8 @@ fn[P : Perform] Parser::decode_utf8(
   }
 }
 
-///| Non-ground dispatch: the cold transition-table path plus param and
-
 ///|
+/// Non-ground dispatch: the cold transition-table path plus param and
 /// intermediate accumulation.
 fn[P : Perform] Parser::advance_non_ground(
   self : Parser,
@@ -279,9 +278,8 @@ fn[P : Perform] Parser::advance_non_ground(
   i + 1
 }
 
-///| Apply a transition's actions to the sink, in DEC order (string
-
 ///|
+/// Apply a transition's actions to the sink, in DEC order (string
 /// terminations before the execute).
 fn[P : Perform] Parser::apply(
   self : Parser,
@@ -357,7 +355,8 @@ fn Parser::clear_seq_state(self : Parser) -> Unit {
 }
 
 ///|
-/// Push an intermediate byte (private marker or 0x20..=0x2f), capping at two.
+/// Push an intermediate byte (private marker or `0x20..=0x2f`), capping at
+/// two.
 fn Parser::push_intermediate(self : Parser, b : Int) -> Unit {
   if self.intermediates_len < MAX_INTERMEDIATES {
     self.intermediates.push(b)
@@ -383,9 +382,8 @@ fn Parser::osc_reset(self : Parser) -> Unit {
   self.osc_starts = []
 }
 
-///| Append an OSC payload byte, tracking `;` param boundaries (the separator
-
 ///|
+/// Append an OSC payload byte, tracking `;` param boundaries (the separator
 /// itself is not buffered).
 fn Parser::osc_push(self : Parser, b : Int) -> Unit {
   if b == 0x3b {
@@ -416,7 +414,7 @@ fn[P : Perform] Parser::osc_end(self : Parser, p : P, bell : Bool) -> Unit {
 }
 
 ///|
-/// Emit a decoded code point: C1 range keeps `execute` semantics.
+/// Emit a decoded code point; the C1 range keeps `execute` semantics.
 fn[P : Perform] dispatch_cp(p : P, cp : Int) -> Unit {
   if cp >= 0x80 && cp <= 0x9f {
     p.execute(cp)
@@ -427,8 +425,7 @@ fn[P : Perform] dispatch_cp(p : P, cp : Int) -> Unit {
 
 ///|
 /// DCS passthrough bulk run: dispatch the payload prefix via one `put_slice`,
-/// stopping at CAN/SUB/ESC/DEL or any byte `>= 0x80` (matching the PUT byte
-/// range exactly).
+/// stopping at CAN/SUB/ESC/DEL or any byte `>= 0x80`.
 fn[P : Perform] Parser::advance_dcs_run(
   self : Parser,
   p : P,
@@ -450,9 +447,9 @@ fn[P : Perform] Parser::advance_dcs_run(
   self.advance_non_ground(p, bytes, i)
 }
 
-///| Index of the first DCS payload boundary byte (CAN/SUB/ESC/DEL or any byte
-
-///| `>= 0x80`), or the remaining length if every byte is a PUT byte.
+///|
+/// Index of the first DCS payload boundary byte (CAN/SUB/ESC/DEL or any byte
+/// `>= 0x80`), or the remaining length if every byte is a PUT byte.
 pub fn first_dcs_boundary(bytes : ArrayView[Int]) -> Int {
   let n = bytes.length()
   let mut i = 0

@@ -13,7 +13,8 @@ const COLS : Int = 80
 ///|
 const ROWS : Int = 24
 
-///| One styled screen cell.
+///|
+/// One styled screen cell.
 struct Cell {
   ch : Char
   fg : Int
@@ -21,11 +22,12 @@ struct Cell {
   bold : Bool
 }
 
-///| A tiny 80x24 screen: a `Perform` sink that tracks the cursor and writes
-
 ///|
-/// styled cells (basic + 256-color SGR; truecolor is snapped to the nearest
-/// 256-color entry). The OSC title is kept for the status line.
+/// A tiny 80×24 screen: a `Perform` sink that tracks the cursor and writes
+/// styled cells.
+///
+/// Basic + 256-color SGR is supported; truecolor is snapped to the nearest
+/// 256-color entry. The OSC title is kept for the status line.
 struct Screen {
   grid : Array[Array[Cell]]
   mut row : Int
@@ -317,13 +319,11 @@ fn redraw(screen : Screen) -> Unit {
   }
 }
 
-///| Forward stdin keystrokes to the PTY. In raw mode each keystroke arrives
-
-///| immediately; the shell (canonical + echo on the PTY) echoes it back
-
-///| through the output path. Ctrl-D (0x04) is forwarded too, so the shell
-
 ///|
+/// Forward stdin keystrokes to the PTY.
+///
+/// In raw mode each keystroke arrives immediately; the shell echoes it back
+/// through the output path. Ctrl-D (`0x04`) is forwarded too, so the shell
 /// sees EOF and exits.
 async fn forward_stdin(pty : @pty.Pty) -> Unit {
   while true {

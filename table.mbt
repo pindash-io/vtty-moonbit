@@ -2,9 +2,9 @@
 // and the `transition` lookup.
 //
 // Reference: Paul Flo Williams' VT500 parser state diagram
-// https://vt100.net/emu/dec_ansi_parser — the "State Definitions" and
-// "Action Definitions" sections map 1:1 to `ParseState` and the `Action`
-// bit flags. The grammar is ECMA-48 §5.4/§8.3.
+// https://vt100.net/emu/dec_ansi_parser — "State Definitions" and "Action
+// Definitions" map 1:1 to `ParseState` and the `Action` bit flags. The
+// grammar is ECMA-48 §5.4/§8.3.
 
 ///|
 /// VT500 parser states (mutually exclusive).
@@ -33,36 +33,48 @@ pub extend ParseState with @debug.Debug::{to_repr}
 
 ///|
 /// Action bit flags (a byte can trigger several).
+///
+/// No action.
 pub const ACTION_NONE : Int = 0
 
 ///|
+/// Print the byte as a character.
 pub const ACTION_PRINT : Int = 1 << 0
 
 ///|
+/// Execute a C0/C1 control byte.
 pub const ACTION_EXECUTE : Int = 1 << 1
 
 ///|
+/// Dispatch a CSI sequence.
 pub const ACTION_CSI_DISPATCH : Int = 1 << 2
 
 ///|
+/// Dispatch an escape sequence.
 pub const ACTION_ESC_DISPATCH : Int = 1 << 3
 
 ///|
+/// Start a DCS string (hook).
 pub const ACTION_HOOK : Int = 1 << 4
 
 ///|
+/// Accumulate a DCS payload byte.
 pub const ACTION_PUT : Int = 1 << 5
 
 ///|
+/// End a DCS string (unhook).
 pub const ACTION_UNHOOK : Int = 1 << 6
 
 ///|
+/// Start an OSC string.
 pub const ACTION_OSC_START : Int = 1 << 7
 
 ///|
+/// Accumulate an OSC payload byte.
 pub const ACTION_OSC_PUT : Int = 1 << 8
 
 ///|
+/// End an OSC string.
 pub const ACTION_OSC_END : Int = 1 << 9
 
 ///|
@@ -71,11 +83,10 @@ pub fn action_has(action : Int, flag : Int) -> Bool {
   (action & flag) != 0
 }
 
-///| DEC "anywhere" transition for a raw 8-bit C1 control byte (0x80..=0x9f).
-
-///| The introducers start their sequence; ST is a no-op; the rest execute and
-
 ///|
+/// DEC "anywhere" transition for a raw 8-bit C1 control byte (`0x80..=0x9f`).
+///
+/// The introducers start their sequence; ST is a no-op; the rest execute and
 /// return to ground.
 pub fn c1_transition(b : Int) -> (Int, ParseState) {
   match b {
@@ -88,10 +99,9 @@ pub fn c1_transition(b : Int) -> (Int, ParseState) {
   }
 }
 
-///| C1 byte arriving inside a non-ground state: abort the sequence and either
-
 ///|
-/// terminate a string (ST 0x9c) or execute/re-enter the introducer.
+/// C1 byte arriving inside a non-ground state: abort the sequence and either
+/// terminate a string (ST `0x9c`) or execute/re-enter the introducer.
 pub fn c1_in_sequence(state : ParseState, b : Int) -> (Int, ParseState) {
   match (state, b) {
     (ParseState::OscString, 0x9c) => (ACTION_OSC_END, ParseState::Ground)
@@ -101,10 +111,11 @@ pub fn c1_in_sequence(state : ParseState, b : Int) -> (Int, ParseState) {
   }
 }
 
-///| The DEC VT500 transition table for the non-ground states. A byte can
-
 ///|
-/// trigger several actions; the result is `(action_bitmask, next_state)`.
+/// The DEC VT500 transition table for the non-ground states.
+///
+/// A byte can trigger several actions; the result is
+/// `(action_bitmask, next_state)`.
 pub fn transition(state : ParseState, b : Int) -> (Int, ParseState) {
   match state {
     ParseState::Escape =>
