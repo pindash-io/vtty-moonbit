@@ -26,6 +26,12 @@ pub enum ParseState {
 } derive(Eq, Debug)
 
 ///|
+pub extend ParseState with Eq::{equal, not_equal}
+
+///|
+pub extend ParseState with @debug.Debug::{to_repr}
+
+///|
 /// Action bit flags (a byte can trigger several).
 pub const ACTION_NONE : Int = 0
 

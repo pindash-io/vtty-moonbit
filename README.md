@@ -36,13 +36,20 @@ p.advance(rec, input[:])
 inspect(rec.events())
 ```
 
+Owned events in one call (allocates one `Event` per dispatch):
+
+```moonbit
+let events = @vtty.Parser::new().parse_events(input[:])
+```
+
 ## Terminal example
 
 `cmd/term` is an interactive minimal terminal emulator: it spawns a real shell
 on a PTY (via `moonbit-community/pty`), puts stdin into raw mode (via
 `moonbit-community/tty`), forwards keystrokes to the shell, and feeds the
 shell's output through the parser into an 80×24 screen sink (cursor tracking,
-`CSI … H`/`A`/`B`/`C`/`D`, `ED`, OSC title) that redraws on every chunk.
+SGR colors — basic, 256-color, and truecolor snapped to 256 — `CSI …
+H`/`A`/`B`/`C`/`D`, `ED`, OSC title) that redraws on every chunk.
 Ctrl-D ends the session.
 
 ```bash

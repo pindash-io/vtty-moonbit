@@ -60,6 +60,20 @@ pub fn Parser::with_simd() -> Parser {
 }
 
 ///|
+/// Parse `bytes` and return the decoded events as an owned `Array[Event]`.
+///
+/// Convenience wrapper for tests and tooling — allocates one `Event` per
+/// dispatch. Prefer `advance` with a `Perform` sink on the hot path.
+pub fn Parser::parse_events(
+  self : Parser,
+  bytes : ArrayView[Int],
+) -> Array[Event] {
+  let rec = Recording::new()
+  self.advance(rec, bytes)
+  rec.events()
+}
+
+///|
 /// Parse `bytes`, dispatching each decoded event to the sink `p`.
 pub fn[P : Perform] Parser::advance(
   self : Parser,
@@ -94,10 +108,10 @@ pub fn[P : Perform] Parser::advance(
     }
   }
   while i < bytes.length() {
-    if self.state == ParseState::Ground {
-      i = self.advance_ground(p, bytes, i)
-    } else {
-      i = self.advance_non_ground(p, bytes, i)
+    match self.state {
+      ParseState::Ground => i = self.advance_ground(p, bytes, i)
+      ParseState::DcsPassthrough => i = self.advance_dcs_run(p, bytes, i)
+      _ => i = self.advance_non_ground(p, bytes, i)
     }
   }
 }
@@ -409,4 +423,45 @@ fn[P : Perform] dispatch_cp(p : P, cp : Int) -> Unit {
   } else {
     p.print(cp_to_char(cp))
   }
+}
+
+///|
+/// DCS passthrough bulk run: dispatch the payload prefix via one `put_slice`,
+/// stopping at CAN/SUB/ESC/DEL or any byte `>= 0x80` (matching the PUT byte
+/// range exactly).
+fn[P : Perform] Parser::advance_dcs_run(
+  self : Parser,
+  p : P,
+  bytes : ArrayView[Int],
+  i : Int,
+) -> Int {
+  let n = first_dcs_boundary(bytes[i:])
+  if n > 0 {
+    p.put_slice(bytes[i:i + n])
+    return i + n
+  }
+  // Boundary byte: ESC terminates the DCS string inline.
+  if bytes[i] == 0x1b {
+    self.clear_seq_state()
+    p.unhook()
+    self.state = ParseState::Escape
+    return i + 1
+  }
+  self.advance_non_ground(p, bytes, i)
+}
+
+///| Index of the first DCS payload boundary byte (CAN/SUB/ESC/DEL or any byte
+
+///| `>= 0x80`), or the remaining length if every byte is a PUT byte.
+pub fn first_dcs_boundary(bytes : ArrayView[Int]) -> Int {
+  let n = bytes.length()
+  let mut i = 0
+  while i < n {
+    let b = bytes[i]
+    if b >= 0x80 || b == 0x18 || b == 0x1a || b == 0x1b || b == 0x7f {
+      return i
+    }
+    i = i + 1
+  }
+  n
 }

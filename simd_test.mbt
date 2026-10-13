@@ -19,7 +19,7 @@ test "first_non_printable" {
 test "first_non_printable across a 16-byte chunk" {
   // 20 printable bytes, then ESC — exercises the SIMD chunk loop + tail.
   let bytes : Array[Int] = []
-  for i in 0..<20 {
+  for _ in 0..<20 {
     bytes.push(0x41)
   }
   bytes.push(0x1b)

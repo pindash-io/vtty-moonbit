@@ -6,6 +6,8 @@ package "fundon/vtty/cmd/term"
 // Errors
 
 // Types and methods
+type Cell
+
 type Screen
 
 // Type aliases

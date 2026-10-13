@@ -1,7 +1,8 @@
 // An interactive minimal terminal emulator: spawn a shell on a real PTY
 // (via `moonbit-community/pty`), forward stdin keystrokes to it, feed its
-// output through `vtty` into an 80x24 screen sink, and redraw the screen on
-// every chunk. Ctrl-D ends the session.
+// output through `vtty` into an 80x24 screen sink (cursor tracking, SGR
+// colors, `CSI … H`/`A`/`B`/`C`/`D`, `ED`, OSC title), and redraw the screen
+// on every chunk. Ctrl-D ends the session.
 //
 // Run with:
 //   moon run --target native cmd/term
@@ -12,35 +13,53 @@ const COLS : Int = 80
 ///|
 const ROWS : Int = 24
 
+///| One styled screen cell.
+struct Cell {
+  ch : Char
+  fg : Int
+  bg : Int
+  bold : Bool
+}
+
 ///| A tiny 80x24 screen: a `Perform` sink that tracks the cursor and writes
 
 ///|
-/// printable cells. SGR colors are ignored; the OSC title is kept.
+/// styled cells (basic + 256-color SGR; truecolor is snapped to the nearest
+/// 256-color entry). The OSC title is kept for the status line.
 struct Screen {
-  grid : Array[Array[Char]]
+  grid : Array[Array[Cell]]
   mut row : Int
   mut col : Int
   mut title : String
+  mut fg : Int
+  mut bg : Int
+  mut bold : Bool
 }
 
 ///|
 fn Screen::new() -> Screen {
-  let grid : Array[Array[Char]] = []
+  let grid : Array[Array[Cell]] = []
   for _ in 0..<ROWS {
-    let line : Array[Char] = []
+    let line : Array[Cell] = []
     for _ in 0..<COLS {
-      line.push(' ')
+      line.push({ ch: ' ', fg: -1, bg: -1, bold: false })
     }
     grid.push(line)
   }
-  { grid, row: 0, col: 0, title: "", }
+  { grid, row: 0, col: 0, title: "", fg: -1, bg: -1, bold: false }
 }
 
 ///|
-/// Write one cell and advance the cursor (wrapping to the next line).
+/// Write one cell with the current SGR style and advance the cursor (wrapping
+/// to the next line).
 fn Screen::write_cell(self : Screen, c : Char) -> Unit {
   if self.row < ROWS && self.col < COLS {
-    self.grid[self.row][self.col] = c
+    self.grid[self.row][self.col] = {
+      ch: c,
+      fg: self.fg,
+      bg: self.bg,
+      bold: self.bold,
+    }
   }
   self.col = self.col + 1
   if self.col >= COLS {
@@ -50,15 +69,131 @@ fn Screen::write_cell(self : Screen, c : Char) -> Unit {
 }
 
 ///|
-fn Screen::render(self : Screen) -> String {
-  let mut out = ""
+/// Apply an SGR (CSI … m) parameter list to the current style.
+fn Screen::apply_sgr(self : Screen, params : ArrayView[Int]) -> Unit {
+  let n = params.length()
+  let mut i = 0
+  while i < n {
+    let p = params[i]
+    if p == 0 {
+      self.fg = -1
+      self.bg = -1
+      self.bold = false
+    } else if p == 1 {
+      self.bold = true
+    } else if p == 22 {
+      self.bold = false
+    } else if p >= 30 && p <= 37 {
+      self.fg = p - 30
+    } else if p == 38 {
+      if i + 2 < n && params[i + 1] == 5 {
+        self.fg = params[i + 2]
+        i = i + 2
+      } else if i + 4 < n && params[i + 1] == 2 {
+        self.fg = rgb_to_256(params[i + 2], params[i + 3], params[i + 4])
+        i = i + 4
+      }
+    } else if p == 39 {
+      self.fg = -1
+    } else if p >= 40 && p <= 47 {
+      self.bg = p - 40
+    } else if p == 48 {
+      if i + 2 < n && params[i + 1] == 5 {
+        self.bg = params[i + 2]
+        i = i + 2
+      } else if i + 4 < n && params[i + 1] == 2 {
+        self.bg = rgb_to_256(params[i + 2], params[i + 3], params[i + 4])
+        i = i + 4
+      }
+    } else if p == 49 {
+      self.bg = -1
+    } else if p >= 90 && p <= 97 {
+      self.fg = p - 90 + 8
+    } else if p >= 100 && p <= 107 {
+      self.bg = p - 100 + 8
+    }
+    i = i + 1
+  }
+}
+
+///|
+/// Snap an RGB triple to the nearest xterm 256-color entry (6×6×6 cube +
+/// grayscale ramp).
+fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
+  if r == g && g == b {
+    if r < 8 {
+      16
+    } else if r > 248 {
+      231
+    } else {
+      232 + (r - 8) / 10
+    }
+  } else {
+    16 + 36 * (r / 51) + 6 * (g / 51) + (b / 51)
+  }
+}
+
+///|
+/// Build an ANSI SGR escape for a cell style, run-length encoding so
+/// consecutive same-styled cells share one escape.
+fn sgr_code(fg : Int, bg : Int, bold : Bool) -> String {
+  if fg < 0 && bg < 0 && !bold {
+    return "\u{1b}[0m"
+  }
+  let parts : Array[String] = []
+  if bold {
+    parts.push("1")
+  }
+  if fg >= 0 && fg < 8 {
+    parts.push("\{30 + fg}")
+  } else if fg >= 8 && fg < 16 {
+    parts.push("\{90 + fg - 8}")
+  } else if fg >= 16 {
+    parts.push("38;5;\{fg}")
+  }
+  if bg >= 0 && bg < 8 {
+    parts.push("\{40 + bg}")
+  } else if bg >= 8 && bg < 16 {
+    parts.push("\{100 + bg - 8}")
+  } else if bg >= 16 {
+    parts.push("48;5;\{bg}")
+  }
+  let mut s = "\u{1b}["
   let mut first = true
-  for line in self.grid {
+  for part in parts {
     if !first {
-      out = out + "\n"
+      s = s + ";"
     }
     first = false
-    out = out + String::from_array(line)
+    s = s + part
+  }
+  s + "m"
+}
+
+///|
+fn Screen::render(self : Screen) -> String {
+  let mut out = ""
+  let mut first_line = true
+  let mut cur_fg = -1
+  let mut cur_bg = -1
+  let mut cur_bold = false
+  for line in self.grid {
+    if !first_line {
+      out = out + "\n"
+    }
+    first_line = false
+    for cell in line {
+      if cell.fg != cur_fg || cell.bg != cur_bg || cell.bold != cur_bold {
+        out = out + sgr_code(cell.fg, cell.bg, cell.bold)
+        cur_fg = cell.fg
+        cur_bg = cell.bg
+        cur_bold = cell.bold
+      }
+      out = out + cell.ch.to_string()
+    }
+  }
+  if cur_fg != -1 || cur_bg != -1 || cur_bold {
+    out = out + "\u{1b}[0m"
   }
   out
 }
@@ -136,12 +271,13 @@ impl @vtty.Perform for Screen with fn csi_dispatch(
       if p0 == 2 || p0 == 3 {
         for r in 0..<ROWS {
           for c in 0..<COLS {
-            self.grid[r][c] = ' '
+            self.grid[r][c] = { ch: ' ', fg: -1, bg: -1, bold: false }
           }
         }
         self.row = 0
         self.col = 0
       }
+    0x6d => self.apply_sgr(params)
     _ => ()
   }
 }
@@ -172,9 +308,13 @@ fn bytes_to_ints(b : Bytes) -> Array[Int] {
 }
 
 ///|
-/// Clear the screen and redraw it from the current grid.
+/// Clear the screen and redraw it from the current grid, with the OSC title
+/// on a status line.
 fn redraw(screen : Screen) -> Unit {
   println("\u{1b}[H" + screen.render())
+  if screen.title != "" {
+    println("\u{1b}[90mOSC title: \{screen.title}\u{1b}[0m")
+  }
 }
 
 ///| Forward stdin keystrokes to the PTY. In raw mode each keystroke arrives

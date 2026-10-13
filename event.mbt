@@ -15,6 +15,12 @@ pub(all) enum Event {
   OscDispatch(Array[Array[Int]], Bool)
 } derive(Eq, Debug)
 
+///|
+pub extend Event with Eq::{equal, not_equal}
+
+///|
+pub extend Event with @debug.Debug::{to_repr}
+
 ///| Records parser events into an `Array[Event]` (the enum-based, trait-free
 
 ///|
@@ -120,4 +126,19 @@ pub impl Perform for Recording with fn osc_dispatch(
   bell_terminated : Bool,
 ) {
   self.events.push(Event::OscDispatch(params, bell_terminated))
+}
+
+///|
+pub extend Recording with Perform::{
+  csi_dispatch,
+  esc_dispatch,
+  execute,
+  hook,
+  osc_dispatch,
+  print,
+  print_bytes,
+  print_codepoints,
+  put,
+  put_slice,
+  unhook,
 }

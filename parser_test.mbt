@@ -100,3 +100,40 @@ test "utf8 split across calls" {
   p.advance(rec, [0xa5][:])
   assert_eq(rec.events(), [@vtty.Event::Print('日')])
 }
+
+///|
+test "parse_events convenience" {
+  let events = @vtty.Parser::new().parse_events([0x1b, 0x5b, 0x31, 0x6d][:])
+  assert_eq(events, [@vtty.Event::CsiDispatch([1], [], 0x6d)])
+}
+
+///|
+test "dcs put_slice bulk run" {
+  let rec = @vtty.Recording::new()
+  let p = @vtty.Parser::new()
+  // ESC P q + 20 payload bytes + ESC \
+  let input : Array[Int] = [0x1b, 0x50, 0x71]
+  for _ in 0..<20 {
+    input.push(0x61)
+  }
+  input.push(0x1b)
+  input.push(0x5c)
+  p.advance(rec, input[:])
+  let expected = [@vtty.Event::DcsHook([], [], 0x71)]
+  for _ in 0..<20 {
+    expected.push(@vtty.Event::DcsPut(0x61))
+  }
+  expected.push(@vtty.Event::DcsUnhook)
+  expected.push(@vtty.Event::EscDispatch([], 0x5c))
+  assert_eq(rec.events(), expected)
+}
+
+///|
+test "first_dcs_boundary" {
+  // 0x19 is a PUT byte (not a boundary); 0x7f stops the run.
+  let bytes : Array[Int] = [0x41, 0x19, 0x42, 0x7f, 0x43]
+  assert_eq(@vtty.first_dcs_boundary(bytes[:]), 3)
+  // CAN/SUB/ESC/high bytes are boundaries; all-PUT input scans to the end.
+  let all_put : Array[Int] = [0x00, 0x17, 0x19, 0x1c, 0x7e]
+  assert_eq(@vtty.first_dcs_boundary(all_put[:]), 5)
+}
