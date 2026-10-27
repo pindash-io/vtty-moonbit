@@ -2,9 +2,7 @@
 
 ///|
 /// A parsed escape-sequence event — the dispatch as data, instead of a
-/// `Perform` callback.
-///
-/// Useful for differential testing and simple consumers.
+/// `Perform` callback. For differential testing and simple consumers.
 pub(all) enum Event {
   Print(Char)
   Execute(Int)
@@ -23,8 +21,7 @@ pub extend Event with Eq::{equal, not_equal}
 pub extend Event with @debug.Debug::{to_repr}
 
 ///|
-/// Records parser events into an `Array[Event]` (the trait-free, enum-based
-/// API).
+/// Records parser events into an `Array[Event]`.
 ///
 /// Allocates one `Event` per dispatch — for tests and tooling.
 pub struct Recording {

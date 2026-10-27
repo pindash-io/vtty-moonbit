@@ -137,3 +137,89 @@ test "first_dcs_boundary" {
   let all_put : Array[Int] = [0x00, 0x17, 0x19, 0x1c, 0x7e]
   assert_eq(@vtty.first_dcs_boundary(all_put[:]), 5)
 }
+
+///|
+test "first_osc_boundary" {
+  // BEL/ESC/C0/C1/`;` are boundaries; payload bytes scan to the end.
+  let bytes : Array[Int] = [0x30, 0x3b, 0x41, 0x07]
+  assert_eq(@vtty.first_osc_boundary(bytes[:]), 1)
+  let payload : Array[Int] = [0x41, 0x42, 0x7e]
+  assert_eq(@vtty.first_osc_boundary(payload[:]), 3)
+  let c1 : Array[Int] = [0x41, 0x9c]
+  assert_eq(@vtty.first_osc_boundary(c1[:]), 1)
+}
+
+///|
+test "flush emits a pending partial as U+FFFD" {
+  let rec = @vtty.Recording::new()
+  let p = @vtty.Parser::new()
+  // Two bytes of a 3-byte "日" (E6 97) with no continuation → U+FFFD at EOS.
+  p.advance(rec, [0xe6, 0x97][:])
+  assert_eq(rec.events(), [])
+  p.flush(rec)
+  assert_eq(rec.events(), [@vtty.Event::Print('\u{FFFD}')])
+}
+
+///|
+test "reset clears a pending escape state" {
+  let rec = @vtty.Recording::new()
+  let p = @vtty.Parser::new()
+  // ESC enters the escape state; reset returns to ground, so 'A' prints.
+  p.advance(rec, [0x1b][:])
+  p.reset()
+  p.advance(rec, [0x41][:])
+  assert_eq(rec.events(), [@vtty.Event::Print('A')])
+}
+
+///|
+test "osc split across advance calls" {
+  let rec = @vtty.Recording::new()
+  let p = @vtty.Parser::new()
+  // ESC ] 0 ;
+  p.advance(rec, [0x1b, 0x5d, 0x30, 0x3b][:])
+  // ti BEL
+  p.advance(rec, [0x74, 0x69, 0x07][:])
+  assert_eq(rec.events(), [
+    @vtty.Event::OscDispatch([[0x30], [0x74, 0x69]], true),
+  ])
+}
+
+///|
+test "csi private marker after params is ignored" {
+  let rec = @vtty.Recording::new()
+  let p = @vtty.Parser::new()
+  // ESC [ 1 ? h — the `?` after a param drops the whole sequence.
+  let input : Array[Int] = [0x1b, 0x5b, 0x31, 0x3f, 0x68]
+  p.advance(rec, input[:])
+  assert_eq(rec.events(), [])
+}
+
+///|
+/// A `Perform` sink that only captures CSI `sep` and params.
+struct CsiSink {
+  mut sep : Int
+  mut params : Array[Int]
+}
+
+///|
+pub impl Perform for CsiSink with fn csi_dispatch(
+  self,
+  params : ArrayView[Int],
+  sep : Int,
+  _intermediates : ArrayView[Int],
+  _final_byte : Int,
+) {
+  self.sep = sep
+  self.params = params.to_owned()
+}
+
+///|
+test "colon separator marks the preceding param" {
+  let sink : CsiSink = { sep: -1, params: [] }
+  let p = @vtty.Parser::new()
+  // ESC [ 4 : 2 m — underline style; `sep` bit 0 marks param 0 as colon-sep.
+  let input : Array[Int] = [0x1b, 0x5b, 0x34, 0x3a, 0x32, 0x6d]
+  p.advance(sink, input[:])
+  assert_eq(sink.params, [4, 2])
+  assert_eq(sink.sep, 1)
+}

@@ -6,68 +6,303 @@ import {
 }
 
 // Values
-pub const ACTION_CSI_DISPATCH : Int = 4
+pub const ACTION_CSI_DISPATCH : Int32 = 4
 
-pub const ACTION_ESC_DISPATCH : Int = 8
+pub const ACTION_ESC_DISPATCH : Int32 = 8
 
-pub const ACTION_EXECUTE : Int = 2
+pub const ACTION_EXECUTE : Int32 = 2
 
-pub const ACTION_HOOK : Int = 16
+pub const ACTION_HOOK : Int32 = 16
 
-pub const ACTION_NONE : Int = 0
+pub const ACTION_NONE : Int32 = 0
 
-pub const ACTION_OSC_END : Int = 512
+pub const ACTION_OSC_END : Int32 = 512
 
-pub const ACTION_OSC_PUT : Int = 256
+pub const ACTION_OSC_PUT : Int32 = 256
 
-pub const ACTION_OSC_START : Int = 128
+pub const ACTION_OSC_START : Int32 = 128
 
-pub const ACTION_PRINT : Int = 1
+pub const ACTION_PRINT : Int32 = 1
 
-pub const ACTION_PUT : Int = 32
+pub const ACTION_PUT : Int32 = 32
 
-pub const ACTION_UNHOOK : Int = 64
+pub const ACTION_UNHOOK : Int32 = 64
 
-pub fn action_has(Int, Int) -> Bool
+pub const KITTY_DISAMBIGUATE : Int32 = 1
 
-pub fn c1_in_sequence(ParseState, Int) -> (Int, ParseState)
+pub const KITTY_REPORT_ALL_KEYS : Int32 = 8
 
-pub fn c1_transition(Int) -> (Int, ParseState)
+pub const KITTY_REPORT_ALTERNATE_KEYS : Int32 = 4
 
-pub fn cp_to_char(Int) -> Char
+pub const KITTY_REPORT_ASSOCIATED_TEXT : Int32 = 16
 
-pub fn decode_validated(ArrayView[Int], Int) -> (Int, Int)
+pub const KITTY_REPORT_EVENT_TYPES : Int32 = 2
 
-pub fn first_dcs_boundary(ArrayView[Int]) -> Int
+pub const MOUSE_ANY_MOTION : Int32 = 8
 
-pub fn first_esc(ArrayView[Int]) -> Int
+pub const MOUSE_DEFAULT : Int32 = 0
 
-pub fn first_non_printable(ArrayView[Int]) -> Int
+pub const MOUSE_ENABLED : Int32 = 1
 
-pub fn transition(ParseState, Int) -> (Int, ParseState)
+pub const MOUSE_MASK : Int64 = 336073664
 
-pub fn utf8_expected(Int) -> Int
+pub const MOUSE_PIXEL : Int32 = 16
 
-pub fn utf8_lead_cp(Int) -> Int
+pub const MOUSE_SGR : Int32 = 4
 
-pub fn utf8_second_byte_valid(Int, Int) -> Bool
+pub const MOUSE_UTF8 : Int32 = 32
+
+pub const MOUSE_X10 : Int32 = 2
+
+pub const SGR_BLINK : Int32 = 256
+
+pub const SGR_BLINK_RAPID : Int32 = 512
+
+pub const SGR_BOLD : Int32 = 8
+
+pub const SGR_DEFAULT : Int32 = 0
+
+pub const SGR_FAINT : Int32 = 32
+
+pub const SGR_INVERSE : Int32 = 64
+
+pub const SGR_INVISIBLE : Int32 = 128
+
+pub const SGR_ITALIC : Int32 = 16
+
+pub const SGR_OVERLINE : Int32 = 4
+
+pub const SGR_RESET : Int32 = 1024
+
+pub const SGR_STRIKETHROUGH : Int32 = 2
+
+pub const SGR_UNDERLINE : Int32 = 1
+
+pub const STYLE_BOLD : Int32 = 8
+
+pub const STYLE_ITALIC : Int32 = 16
+
+pub const STYLE_OVERLINE : Int32 = 4
+
+pub const STYLE_STRIKETHROUGH : Int32 = 2
+
+pub const STYLE_UNDERLINE : Int32 = 1
+
+pub const TERM_ALTERNATE_SCROLL : Int64 = 1048576
+
+pub const TERM_ALT_SCREEN : Int64 = 16384
+
+pub const TERM_ALT_SCREEN_1047 : Int64 = 2147483648
+
+pub const TERM_ALT_SCREEN_1049 : Int64 = 32768
+
+pub const TERM_BRACKETED_PASTE : Int64 = 32
+
+pub const TERM_COLOR_SCHEME_UPDATES : Int64 = 131072
+
+pub const TERM_CURSOR_BLINK : Int64 = 4294967296
+
+pub const TERM_CURSOR_KEYS : Int64 = 1024
+
+pub const TERM_CURSOR_VISIBLE : Int64 = 16
+
+pub const TERM_DECCOLM : Int64 = 8192
+
+pub const TERM_DECLRMM : Int64 = 8388608
+
+pub const TERM_DECNKM : Int64 = 16777216
+
+pub const TERM_DECSDM : Int64 = 134217728
+
+pub const TERM_FOCUS : Int64 = 262144
+
+pub const TERM_INSERT : Int64 = 1
+
+pub const TERM_IN_BAND_RESIZE : Int64 = 536870912
+
+pub const TERM_LINEFEED : Int64 = 8
+
+pub const TERM_MOUSE_ANY : Int64 = 512
+
+pub const TERM_MOUSE_BUTTON : Int64 = 256
+
+pub const TERM_MOUSE_NORMAL : Int64 = 128
+
+pub const TERM_MOUSE_PIXEL : Int64 = 67108864
+
+pub const TERM_MOUSE_SGR : Int64 = 4096
+
+pub const TERM_MOUSE_URXVT : Int64 = 268435456
+
+pub const TERM_MOUSE_X10 : Int64 = 64
+
+pub const TERM_NONE : Int64 = 0
+
+pub const TERM_ORIGIN : Int64 = 2
+
+pub const TERM_REVERSE : Int64 = 2048
+
+pub const TERM_REVERSE_WRAP : Int64 = 4194304
+
+pub const TERM_REVERSE_WRAP_EXTENDED : Int64 = 1073741824
+
+pub const TERM_SYNC_OUTPUT : Int64 = 65536
+
+pub const TERM_UNICODE_CORE : Int64 = 33554432
+
+pub const TERM_UTF8_MOUSE : Int64 = 524288
+
+pub const TERM_VI : Int64 = 2097152
+
+pub const TERM_WRAPAROUND : Int64 = 4
+
+pub fn action_has(Int32, Int32) -> Bool
+
+pub fn c1_in_sequence(ParseState, Int32) -> (Int32, ParseState)
+
+pub fn c1_transition(Int32) -> (Int32, ParseState)
+
+pub fn cap_parse(String) -> (String, CapValue)
+
+pub fn cp_to_char(Int32) -> Char
+
+pub fn dec_special_graphics(Char) -> Char
+
+pub fn decode_validated(ArrayView[Int32], Int32) -> (Int32, Int32)
+
+pub fn default_bg_id() -> ColorId
+
+pub fn default_fg_id() -> ColorId
+
+pub fn first_dcs_boundary(ArrayView[Int32]) -> Int32
+
+pub fn first_esc(ArrayView[Int32]) -> Int32
+
+pub fn first_non_printable(ArrayView[Int32]) -> Int32
+
+pub fn first_osc_boundary(ArrayView[Int32]) -> Int32
+
+pub fn kitty_flags_has(Int32, Int32) -> Bool
+
+pub fn mouse_tracking_has(Int32, Int32) -> Bool
+
+pub fn program_status_query() -> Array[Int32]
+
+pub fn sgr_flags_decorations(Int32) -> Int32
+
+pub fn sgr_flags_from_code(Int32) -> Int32
+
+pub fn sgr_flags_has(Int32, Int32) -> Bool
+
+pub fn term_flags_from_any_mode_code(Int32) -> Int64
+
+pub fn term_flags_from_mode_code(Int32, Bool) -> Int64
+
+pub fn term_flags_from_private_param(Int32) -> Int64
+
+pub fn term_flags_has(Int64, Int64) -> Bool
+
+pub fn term_flags_private_param(Int64) -> Int32
+
+pub fn trailing_partial(ArrayView[Int32]) -> (Int32, Int32, Int32)?
+
+pub fn transition(ParseState, Int32) -> (Int32, ParseState)
+
+pub fn utf8_lead(Int32) -> (Int32, Int32)
+
+pub fn utf8_second_byte_valid(Int32, Int32) -> Bool
 
 // Errors
 
 // Types and methods
+pub(all) enum CapValue {
+  None
+  Bool
+  Text(String)
+  Cols
+  Rows
+  OsName
+} derive(Eq, @debug.Debug)
+pub fn CapValue::equal(Self, Self) -> Bool
+pub fn CapValue::not_equal(Self, Self) -> Bool
+pub fn CapValue::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Charset {
+  Ascii
+  Dec
+  British
+} derive(Eq, @debug.Debug)
+pub fn Charset::equal(Self, Self) -> Bool
+pub fn Charset::map(Self, Char) -> Char
+pub fn Charset::not_equal(Self, Self) -> Bool
+pub fn Charset::to_repr(Self) -> @debug.Repr
+
+pub struct Charsets {
+  slots : Array[Charset]
+}
+pub fn Charsets::ascii() -> Self
+pub fn Charsets::designate(Self, Int32, Charset) -> Unit
+pub fn Charsets::g0(Self) -> Charset
+pub fn Charsets::g1(Self) -> Charset
+pub fn Charsets::g2(Self) -> Charset
+pub fn Charsets::g3(Self) -> Charset
+pub fn Charsets::get(Self, Int32) -> Charset
+
+pub struct ColorId(Int32) derive(Eq, @debug.Debug)
+pub fn ColorId::equal(Self, Self) -> Bool
+pub fn ColorId::from_i32(Int32) -> Self
+pub fn ColorId::from_int(Int32) -> Self
+pub fn ColorId::index(Self) -> Int32
+pub fn ColorId::not_equal(Self, Self) -> Bool
+pub fn ColorId::to_repr(Self) -> @debug.Repr
+
+pub(all) enum CursorStyle {
+  None
+  Block
+  Bar
+  Underline
+} derive(Eq, @debug.Debug)
+pub fn CursorStyle::equal(Self, Self) -> Bool
+pub fn CursorStyle::from_decscusr(Int32) -> Self
+pub fn CursorStyle::from_osc(Int32) -> Self
+pub fn CursorStyle::not_equal(Self, Self) -> Bool
+pub fn CursorStyle::parse(String) -> Self
+pub fn CursorStyle::to_repr(Self) -> @debug.Repr
+
 pub(all) enum Event {
   Print(Char)
-  Execute(Int)
-  CsiDispatch(Array[Int], Array[Int], Int)
-  EscDispatch(Array[Int], Int)
-  DcsHook(Array[Int], Array[Int], Int)
-  DcsPut(Int)
+  Execute(Int32)
+  CsiDispatch(Array[Int32], Array[Int32], Int32)
+  EscDispatch(Array[Int32], Int32)
+  DcsHook(Array[Int32], Array[Int32], Int32)
+  DcsPut(Int32)
   DcsUnhook
-  OscDispatch(Array[Array[Int]], Bool)
+  OscDispatch(Array[Array[Int32]], Bool)
 } derive(Eq, @debug.Debug)
 pub fn Event::equal(Self, Self) -> Bool
 pub fn Event::not_equal(Self, Self) -> Bool
 pub fn Event::to_repr(Self) -> @debug.Repr
+
+pub(all) enum MouseButton {
+  Left
+  Middle
+  Right
+  Release
+  Motion
+  MotionNoButton
+  WheelUp
+  WheelDown
+  WheelLeft
+  WheelRight
+} derive(Eq, @debug.Debug)
+pub fn MouseButton::code(Self) -> Int32
+pub fn MouseButton::encode(Self, Int32, Int32, Int32, Bool) -> Array[Int32]?
+pub fn MouseButton::encode_sgr(Self, Int32, Int32, Bool) -> Array[Int32]
+pub fn MouseButton::encode_utf8(Self, Int32, Int32) -> Array[Int32]
+pub fn MouseButton::encode_x10(Self, Int32, Int32) -> Array[Int32]
+pub fn MouseButton::equal(Self, Self) -> Bool
+pub fn MouseButton::not_equal(Self, Self) -> Bool
+pub fn MouseButton::to_repr(Self) -> @debug.Repr
 
 pub enum ParseState {
   Ground
@@ -91,56 +326,159 @@ pub fn ParseState::to_repr(Self) -> @debug.Repr
 
 pub struct Parser {
   mut state : ParseState
-  mut params : Array[Int]
-  mut params_len : Int
-  mut param : Int
+  mut param : Int32
   mut param_empty : Bool
-  mut sep : Int
-  mut intermediates : Array[Int]
-  mut intermediates_len : Int
-  mut ignore : Bool
-  mut partial : Int
-  mut partial_need : Int
-  mut osc : Array[Int]
-  mut osc_starts : Array[Int]
+  mut params : Array[Int32]
+  mut params_len : Int32
+  mut sep : Int32
+  mut intermediates : Array[Int32]
+  mut intermediates_len : Int32
+  mut osc : Array[Int32]
+  mut osc_overflow : Bool
+  mut osc_starts : Array[Int32]
+  mut osc_num_starts : Int32
+  mut osc_deferring : Bool
+  mut osc_base : Int32
+  mut partial : Int32
+  mut partial_need : Int32
   mut simd : Bool
 }
-pub fn[P : Perform] Parser::advance(Self, P, ArrayView[Int]) -> Unit
+pub fn[P : Perform] Parser::advance(Self, P, ArrayView[Int32]) -> Unit
+pub fn[P : Perform] Parser::flush(Self, P) -> Unit
 pub fn Parser::new() -> Self
-pub fn Parser::parse_events(Self, ArrayView[Int]) -> Array[Event]
+pub fn Parser::parse_events(Self, ArrayView[Int32]) -> Array[Event]
+pub fn Parser::reset(Self) -> Unit
 pub fn Parser::with_simd() -> Self
+
+pub struct ProgramStatus {
+  state : StatusState
+  id : String?
+  kind : StatusKind?
+  progress : Int32?
+  app : String?
+  title : String?
+  msg : String?
+} derive(Eq, @debug.Debug)
+pub fn ProgramStatus::default() -> Self
+pub fn ProgramStatus::equal(Self, Self) -> Bool
+pub fn ProgramStatus::from_osc_params(Array[Array[Int32]]) -> Self?
+pub fn ProgramStatus::new(StatusState, String?, StatusKind?, Int32?, String?, String?, String?) -> Self
+pub fn ProgramStatus::not_equal(Self, Self) -> Bool
+pub fn ProgramStatus::parse(ArrayView[Int32]) -> Self?
+pub fn ProgramStatus::to_osc(Self) -> Array[Int32]
+pub fn ProgramStatus::to_repr(Self) -> @debug.Repr
+pub fn ProgramStatus::write_osc(Self, Array[Int32]) -> Unit
 
 pub struct Recording {
   events : Array[Event]
 }
-pub fn Recording::csi_dispatch(Self, ArrayView[Int], Int, ArrayView[Int], Int) -> Unit
-pub fn Recording::esc_dispatch(Self, ArrayView[Int], Int) -> Unit
+pub fn Recording::csi_dispatch(Self, ArrayView[Int32], Int32, ArrayView[Int32], Int32) -> Unit
+pub fn Recording::esc_dispatch(Self, ArrayView[Int32], Int32) -> Unit
 pub fn Recording::events(Self) -> Array[Event]
-pub fn Recording::execute(Self, Int) -> Unit
-pub fn Recording::hook(Self, ArrayView[Int], ArrayView[Int], Int) -> Unit
+pub fn Recording::execute(Self, Int32) -> Unit
+pub fn Recording::hook(Self, ArrayView[Int32], ArrayView[Int32], Int32) -> Unit
 pub fn Recording::new() -> Self
-pub fn Recording::osc_dispatch(Self, Array[Array[Int]], Bool) -> Unit
+pub fn Recording::osc_dispatch(Self, Array[Array[Int32]], Bool) -> Unit
 pub fn Recording::print(Self, Char) -> Unit
-pub fn Recording::print_bytes(Self, ArrayView[Int]) -> Unit
-pub fn Recording::print_codepoints(Self, ArrayView[Int]) -> Unit
-pub fn Recording::put(Self, Int) -> Unit
-pub fn Recording::put_slice(Self, ArrayView[Int]) -> Unit
+pub fn Recording::print_bytes(Self, ArrayView[Int32]) -> Unit
+pub fn Recording::print_codepoints(Self, ArrayView[Int32]) -> Unit
+pub fn Recording::put(Self, Int32) -> Unit
+pub fn Recording::put_slice(Self, ArrayView[Int32]) -> Unit
 pub fn Recording::unhook(Self) -> Unit
 pub impl Perform for Recording
+
+pub struct Reply {
+  buf : StringBuilder
+  mut empty : Bool
+}
+pub fn Reply::decrqm(Self, Int32, Bool, Int32) -> Self
+pub fn Reply::decrqss(Self, Bool, String) -> Self
+pub fn Reply::finish(Self) -> String
+pub fn Reply::is_empty(Self) -> Bool
+pub fn Reply::new() -> Self
+pub fn Reply::sgr(Self, ColorId, ColorId, Int32, ArrayView[Int32]) -> Self
+pub fn Reply::termcap(Self, String, Int32, Int32) -> Self
+pub fn Reply::xtgettcap_error(Self, String) -> Self
+pub fn Reply::xtgettcap_num(Self, String, Int32) -> Self
+pub fn Reply::xtgettcap_reply(Self, String, String) -> Self
+pub fn Reply::xtgettcap_reply_bool(Self, String) -> Self
+
+pub struct State {
+  mut text : String
+  mut cursor : Int32
+  mut line_start : Int32
+}
+pub fn State::csi_dispatch(Self, ArrayView[Int32], Int32, ArrayView[Int32], Int32) -> Unit
+pub fn State::cursor(Self) -> Int32
+pub fn State::cursor_col(Self) -> Int32
+pub fn State::cursor_row(Self) -> Int32
+pub fn State::esc_dispatch(Self, ArrayView[Int32], Int32) -> Unit
+pub fn State::execute(Self, Int32) -> Unit
+pub fn State::hook(Self, ArrayView[Int32], ArrayView[Int32], Int32) -> Unit
+pub fn State::line_count(Self) -> Int32
+pub fn State::line_range(Self, Int32) -> (Int32, Int32)?
+pub fn State::new() -> Self
+pub fn State::osc_dispatch(Self, Array[Array[Int32]], Bool) -> Unit
+pub fn State::print(Self, Char) -> Unit
+pub fn State::print_bytes(Self, ArrayView[Int32]) -> Unit
+pub fn State::print_codepoints(Self, ArrayView[Int32]) -> Unit
+pub fn State::put(Self, Int32) -> Unit
+pub fn State::put_slice(Self, ArrayView[Int32]) -> Unit
+pub fn State::text(Self) -> String
+pub fn State::unhook(Self) -> Unit
+pub impl Perform for State
+
+pub(all) enum StatusKind {
+  Permission
+  Question
+  Auth
+} derive(Eq, @debug.Debug)
+pub fn StatusKind::as_string(Self) -> String
+pub fn StatusKind::equal(Self, Self) -> Bool
+pub fn StatusKind::not_equal(Self, Self) -> Bool
+pub fn StatusKind::parse(String) -> Self?
+pub fn StatusKind::to_repr(Self) -> @debug.Repr
+
+pub(all) enum StatusState {
+  Idle
+  Working
+  Done
+  Blocked
+  Error
+  Clear
+} derive(Eq, @debug.Debug)
+pub fn StatusState::as_string(Self) -> String
+pub fn StatusState::equal(Self, Self) -> Bool
+pub fn StatusState::not_equal(Self, Self) -> Bool
+pub fn StatusState::parse(String) -> Self?
+pub fn StatusState::to_repr(Self) -> @debug.Repr
+
+pub(all) enum UnderlineStyle {
+  None
+  Single
+  Double
+  Curly
+  Dotted
+  Dashed
+} derive(Eq, @debug.Debug)
+pub fn UnderlineStyle::equal(Self, Self) -> Bool
+pub fn UnderlineStyle::from_int(Int32) -> Self
+pub fn UnderlineStyle::not_equal(Self, Self) -> Bool
+pub fn UnderlineStyle::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 
 // Traits
 pub(open) trait Perform {
   fn print(Self, Char) -> Unit = _
-  fn print_bytes(Self, ArrayView[Int]) -> Unit = _
-  fn print_codepoints(Self, ArrayView[Int]) -> Unit = _
-  fn execute(Self, Int) -> Unit = _
-  fn csi_dispatch(Self, ArrayView[Int], Int, ArrayView[Int], Int) -> Unit = _
-  fn esc_dispatch(Self, ArrayView[Int], Int) -> Unit = _
-  fn hook(Self, ArrayView[Int], ArrayView[Int], Int) -> Unit = _
-  fn put(Self, Int) -> Unit = _
-  fn put_slice(Self, ArrayView[Int]) -> Unit = _
+  fn print_bytes(Self, ArrayView[Int32]) -> Unit = _
+  fn print_codepoints(Self, ArrayView[Int32]) -> Unit = _
+  fn execute(Self, Int32) -> Unit = _
+  fn csi_dispatch(Self, ArrayView[Int32], Int32, ArrayView[Int32], Int32) -> Unit = _
+  fn esc_dispatch(Self, ArrayView[Int32], Int32) -> Unit = _
+  fn hook(Self, ArrayView[Int32], ArrayView[Int32], Int32) -> Unit = _
+  fn put(Self, Int32) -> Unit = _
+  fn put_slice(Self, ArrayView[Int32]) -> Unit = _
   fn unhook(Self) -> Unit = _
-  fn osc_dispatch(Self, Array[Array[Int]], Bool) -> Unit = _
+  fn osc_dispatch(Self, Array[Array[Int32]], Bool) -> Unit = _
 }

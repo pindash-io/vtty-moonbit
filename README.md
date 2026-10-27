@@ -14,11 +14,24 @@ the core `vtty` Rust crate.
 - **Owned event API** (`event.mbt`) — `Event` + `Recording`.
 - **UTF-8** (`utf8.mbt`) — W3C "Substitution of Maximal Subparts": each
   invalid maximal subpart becomes one `U+FFFD`, standalone C1 keeps `execute`
-  semantics, and code points split across calls are carried over.
-- **`Parser`** (`parser.mbt`) — zero-allocation dispatch to a `Perform` sink.
+  semantics, and trailing partial code points are detected up front
+  (`trailing_partial`) and carried across `advance` calls.
+- **`Parser`** (`parser.mbt`) — zero-allocation dispatch to a `Perform` sink:
+  bulk `print_bytes` runs, a `ESC [ … final` CSI fast path, inline
+  escape/param/OSC/DCS dispatchers, a 1 MiB OSC payload cap with deferred
+  copy, `flush()` for end-of-stream, and `reset()`.
 - **SIMD byte scans** (`simd.mbt`) — `first_non_printable` / `first_esc` via
   `@v128`, plus branchless `decode_validated`. Opt in with
   `Parser::with_simd()`.
+- **Terminal model types** (the `vtty_types` data plane) — `ColorId`
+  (`color.mbt`), `SgrFlags`/`StyleFlags`/`UnderlineStyle`/`CursorStyle`
+  (`style.mbt`), `Charset`/`Charsets`/`dec_special_graphics` (`charset.mbt`),
+  `KittyFlags` (`keyboard.mbt`), `TermFlags`/`MOUSE_MASK` (`mode.mbt`), and
+  `MouseButton`/`MouseTracking` (`mouse.mbt`).
+- **Perform-sink consumers** — `State` byte-cursor geometry (`state.mbt`),
+  `Reply` query-reply builder (`reply.mbt`), the XTGETTCAP `Cap` table
+  (`termcap.mbt`), and the OSC 7501 `ProgramStatus` parser/encoder
+  (`status.mbt`).
 
 ## Not ported
 
