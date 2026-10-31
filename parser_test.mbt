@@ -6,11 +6,7 @@ test "ascii print run" {
   let input : Array[Int] = [0x68, 0x65, 0x6c, 0x6c, 0x6f] // "hello"
   p.advance(rec, input[:])
   assert_eq(rec.events(), [
-    @vtty.Event::Print('h'),
-    @vtty.Event::Print('e'),
-    @vtty.Event::Print('l'),
-    @vtty.Event::Print('l'),
-    @vtty.Event::Print('o'),
+    @vtty.Event::PrintBytes([0x68, 0x65, 0x6c, 0x6c, 0x6f]),
   ])
 }
 
@@ -21,7 +17,7 @@ test "csi dispatch with params" {
   // ESC [ 1 ; 31 m
   let input : Array[Int] = [0x1b, 0x5b, 0x31, 0x3b, 0x33, 0x31, 0x6d]
   p.advance(rec, input[:])
-  assert_eq(rec.events(), [@vtty.Event::CsiDispatch([1, 31], [], 0x6d)])
+  assert_eq(rec.events(), [@vtty.Event::CsiDispatch([1, 31], 0, [], 0x6d)])
 }
 
 ///|
@@ -31,7 +27,7 @@ test "csi private marker and intermediate" {
   // ESC [ ? 1 h
   let input : Array[Int] = [0x1b, 0x5b, 0x3f, 0x31, 0x68]
   p.advance(rec, input[:])
-  assert_eq(rec.events(), [@vtty.Event::CsiDispatch([1], [0x3f], 0x68)])
+  assert_eq(rec.events(), [@vtty.Event::CsiDispatch([1], 0, [0x3f], 0x68)])
 }
 
 ///|
@@ -87,7 +83,7 @@ test "utf8 valid and malformed" {
   assert_eq(rec.events(), [
     @vtty.Event::Print('日'),
     @vtty.Event::Print('\u{FFFD}'),
-    @vtty.Event::Print('A'),
+    @vtty.Event::PrintBytes([0x41]),
   ])
 }
 
@@ -104,7 +100,7 @@ test "utf8 split across calls" {
 ///|
 test "parse_events convenience" {
   let events = @vtty.Parser::new().parse_events([0x1b, 0x5b, 0x31, 0x6d][:])
-  assert_eq(events, [@vtty.Event::CsiDispatch([1], [], 0x6d)])
+  assert_eq(events, [@vtty.Event::CsiDispatch([1], 0, [], 0x6d)])
 }
 
 ///|
@@ -168,7 +164,7 @@ test "reset clears a pending escape state" {
   p.advance(rec, [0x1b][:])
   p.reset()
   p.advance(rec, [0x41][:])
-  assert_eq(rec.events(), [@vtty.Event::Print('A')])
+  assert_eq(rec.events(), [@vtty.Event::PrintBytes([0x41])])
 }
 
 ///|
@@ -222,4 +218,77 @@ test "colon separator marks the preceding param" {
   p.advance(sink, input[:])
   assert_eq(sink.params, [4, 2])
   assert_eq(sink.sep, 1)
+}
+
+///|
+/// A sink that counts the fused print+LF dispatches.
+struct FusionSink {
+  mut lines : Int
+  mut crlf : Int
+}
+
+///|
+pub impl Perform for FusionSink with fn print_line(self, _s : ArrayView[Int]) {
+  self.lines = self.lines + 1
+}
+
+///|
+pub impl Perform for FusionSink with fn print_crlf_line(
+  self,
+  _s : ArrayView[Int],
+) {
+  self.crlf = self.crlf + 1
+}
+
+///|
+test "print_line and print_crlf_line fusion" {
+  let sink : FusionSink = { lines: 0, crlf: 0 }
+  let p = @vtty.Parser::new()
+  // "abc\ndef\r\nghi" — the "abc" run followed by LF fuses to `print_line`;
+  // the "def" run followed by CRLF fuses to `print_crlf_line`.
+  let input : Array[Int] = [
+    0x61,
+    0x62,
+    0x63,
+    0x0a,
+    0x64,
+    0x65,
+    0x66,
+    0x0d,
+    0x0a,
+    0x67,
+    0x68,
+    0x69,
+  ]
+  p.advance(sink, input[:])
+  assert_eq(sink.lines, 1)
+  assert_eq(sink.crlf, 1)
+}
+
+///|
+/// DEC's "anywhere" rule for C1 controls: a C1 control cancels an OSC string,
+/// firing `osc_end` once, then the control is executed (or an introducer
+/// re-enters its state). Regression: the exit action used to be dropped for
+/// every C1 control except ST (`0x9c`).
+test "c1 interrupt fires osc exit action" {
+  for b = 0x80; b <= 0x9f; b = b + 1 {
+    let events = @vtty.Parser::new().parse_events(
+      [0x1b, 0x5d, 0x30, 0x3b, 0x78, b][:],
+    )
+    let mut oscs = 0
+    let mut execs = 0
+    for e in events {
+      match e {
+        @vtty.Event::OscDispatch(_, _) => oscs = oscs + 1
+        @vtty.Event::Execute(_) => execs = execs + 1
+        _ => ()
+      }
+    }
+    assert_eq(oscs, 1)
+    let executes = (b >= 0x80 && b <= 0x8f) ||
+      (b >= 0x91 && b <= 0x97) ||
+      b == 0x99 ||
+      b == 0x9a
+    assert_eq(execs, if executes { 1 } else { 0 })
+  }
 }

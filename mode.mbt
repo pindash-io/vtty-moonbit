@@ -143,6 +143,16 @@ pub const TERM_ALT_SCREEN_1047 : Int64 = 1L << 31
 pub const TERM_CURSOR_BLINK : Int64 = 1L << 32
 
 ///|
+/// DEC 67 — backarrow key mode (DECBKM): Backspace sends `\x08` instead of
+/// `\x7f`.
+pub const TERM_BACKARROW_KEY_MODE : Int64 = 1L << 33
+
+///|
+/// DEC 1035 (`CSI ?1035 h/l`) — ignore the numlock state for the keypad
+/// (the keypad is always numeric, never application).
+pub const TERM_NUMLOCK : Int64 = 1L << 34
+
+///|
 /// Test whether `flags` contains `flag`.
 pub fn term_flags_has(flags : Int64, flag : Int64) -> Bool {
   (flags & flag) != 0L
@@ -186,6 +196,8 @@ pub fn term_flags_private_param(flags : Int64) -> Int {
     1073741824L => 1045 // REVERSE_WRAP_EXTENDED
     2147483648L => 1047 // ALT_SCREEN_1047
     4294967296L => 12 // CURSOR_BLINK
+    8589934592L => 67 // BACKARROW_KEY_MODE (DECBKM)
+    17179869184L => 1035 // NUMLOCK
     _ => 0
   }
 }
@@ -205,6 +217,7 @@ pub fn term_flags_from_private_param(param : Int) -> Int64 {
     45 => TERM_REVERSE_WRAP
     47 => TERM_ALT_SCREEN
     66 => TERM_DECNKM
+    67 => TERM_BACKARROW_KEY_MODE
     69 => TERM_DECLRMM
     80 => TERM_DECSDM
     1000 => TERM_MOUSE_NORMAL
@@ -216,6 +229,7 @@ pub fn term_flags_from_private_param(param : Int) -> Int64 {
     1007 => TERM_ALTERNATE_SCROLL
     1015 => TERM_MOUSE_URXVT
     1016 => TERM_MOUSE_PIXEL
+    1035 => TERM_NUMLOCK
     1045 => TERM_REVERSE_WRAP_EXTENDED
     1046 => TERM_VI
     1047 => TERM_ALT_SCREEN_1047

@@ -207,6 +207,8 @@ pub extend State with Perform::{
   print,
   print_bytes,
   print_codepoints,
+  print_crlf_line,
+  print_line,
   put,
   put_slice,
   unhook,

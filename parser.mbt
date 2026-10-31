@@ -239,8 +239,24 @@ fn[P : Perform] Parser::advance_ground(
       first_non_printable_scalar(run[pos:valid])
     }
     if n > 0 {
-      p.print_bytes(run[pos:pos + n])
-      pos = pos + n
+      let end = pos + n
+      // Fused print+LF fast path: the printable run is followed by a bare
+      // `\n` (raw LF) or `\r\n` (OPOST) — dispatch ONE fused call instead of
+      // `print_bytes` + one/two `execute`s. The default `print_line` /
+      // `print_crlf_line` delegate back to those, so a screen that does not
+      // specialize is unaffected.
+      if end < valid && run[end] == 0x0a {
+        p.print_line(run[pos:end])
+        pos = end + 1
+        continue
+      }
+      if end + 1 < valid && run[end] == 0x0d && run[end + 1] == 0x0a {
+        p.print_crlf_line(run[pos:end])
+        pos = end + 2
+        continue
+      }
+      p.print_bytes(run[pos:end])
+      pos = end
     }
     if pos >= valid {
       break
@@ -621,10 +637,18 @@ fn[P : Perform] Parser::advance_non_ground(
     self.clear_seq_state()
   }
   if b >= 0x80 && b <= 0x9f {
-    // 8-bit C1: DEC's "anywhere" rule — abort the sequence, execute the
-    // control, introducers re-enter their state (ST `0x9c` is a no-op).
+    // 8-bit C1: DEC's "anywhere" rule — a C1 control cancels any escape
+    // sequence, control sequence or control string in progress. A string
+    // state's exit action (`osc_end` / `unhook`) fires first — the deferred
+    // OSC payload was already flushed by `advance_osc_run` — then the
+    // control is executed or an introducer re-enters its state.
+    match state {
+      ParseState::OscString => self.osc_end(p, false, bytes, i)
+      ParseState::DcsPassthrough => p.unhook()
+      _ => ()
+    }
     self.clear_seq_state()
-    let (action, next) = c1_in_sequence(state, b)
+    let (action, next) = c1_transition(b)
     self.apply(p, action, b)
     self.state = next
     return i + 1

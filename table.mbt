@@ -100,18 +100,6 @@ pub fn c1_transition(b : Int) -> (Int, ParseState) {
 }
 
 ///|
-/// C1 byte arriving inside a non-ground state: abort the sequence and either
-/// terminate a string (ST `0x9c`) or execute/re-enter the introducer.
-pub fn c1_in_sequence(state : ParseState, b : Int) -> (Int, ParseState) {
-  match (state, b) {
-    (ParseState::OscString, 0x9c) => (ACTION_OSC_END, ParseState::Ground)
-    (ParseState::DcsPassthrough, 0x9c) => (ACTION_UNHOOK, ParseState::Ground)
-    (ParseState::SosPmApcString, 0x9c) => (ACTION_NONE, ParseState::Ground)
-    _ => c1_transition(b)
-  }
-}
-
-///|
 /// The DEC VT500 transition table for the non-ground states.
 ///
 /// A byte can trigger several actions; the result is

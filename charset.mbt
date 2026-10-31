@@ -83,7 +83,13 @@ pub fn Charset::map(self : Charset, c : Char) -> Char {
 /// restore all four together.
 pub struct Charsets {
   slots : Array[Charset]
-}
+} derive(Eq, Debug)
+
+///|
+pub extend Charsets with Eq::{equal, not_equal}
+
+///|
+pub extend Charsets with @debug.Debug::{to_repr}
 
 ///|
 /// All slots designated to US-ASCII (the power-on state).
@@ -131,4 +137,70 @@ pub fn Charsets::g2(self : Charsets) -> Charset {
 /// The G3 set (SS3 `0x8F` single-shift target).
 pub fn Charsets::g3(self : Charsets) -> Charset {
   self.slots[3]
+}
+
+///|
+/// The full ISO 2022 SCS (Select Character Set) state: the four designated
+/// G-sets plus the GL locking-shift slot and the `SS2`/`SS3` single shift. One
+/// `Copy`-able value shared by the cell and line screens so the active-charset
+/// selection lives in ONE place.
+pub struct Scs {
+  charsets : Charsets
+  mut gl : Int
+  mut single_shift : Option[Int]
+} derive(Eq, Debug)
+
+///|
+pub extend Scs with Eq::{equal, not_equal}
+
+///|
+pub extend Scs with @debug.Debug::{to_repr}
+
+///|
+/// The power-on state: all G-sets ASCII, GL on G0, no single shift.
+pub fn Scs::ascii() -> Scs {
+  { charsets: Charsets::ascii(), gl: 0, single_shift: None }
+}
+
+///|
+/// Designate slot `g` to `charset` (delegates to `Charsets::designate`).
+pub fn Scs::designate(self : Scs, g : Int, charset : Charset) -> Unit {
+  self.charsets.designate(g, charset)
+}
+
+///|
+/// Set the GL locking-shift slot (LS0..=LS3).
+pub fn Scs::shift(self : Scs, g : Int) -> Unit {
+  self.gl = if g < 3 { g } else { 3 }
+}
+
+///|
+/// Apply a C0/C1 charset-shift control byte: SO (`0x0E`) = LS1,
+/// SI (`0x0F`) = LS0, SS2 (`0x8E`) = single-shift G2, SS3 (`0x8F`) =
+/// single-shift G3. Any other byte is a defensive no-op.
+pub fn Scs::apply_shift(self : Scs, byte : Int) -> Unit {
+  match byte {
+    0x0e => self.shift(1)
+    0x0f => self.shift(0)
+    0x8e => self.single_shift = Some(2)
+    0x8f => self.single_shift = Some(3)
+    _ => ()
+  }
+}
+
+///|
+/// The active charset: an `SS2`/`SS3` single shift wins for one char, then the
+/// GL locking shift, otherwise G0.
+pub fn Scs::active(self : Scs) -> Charset {
+  let g = match self.single_shift {
+    Some(s) => s
+    None => self.gl
+  }
+  self.charsets.get(g)
+}
+
+///|
+/// Translate a char through the active charset.
+pub fn Scs::map(self : Scs, c : Char) -> Char {
+  self.active().map(c)
 }

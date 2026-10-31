@@ -6,12 +6,14 @@ the core `vtty` Rust crate.
 ## Ported
 
 - **DEC VT500 state machine** (`table.mbt`) — all 14 parser states, the
-  `transition` lookup, and the `c1_transition` / `c1_in_sequence` "anywhere"
-  rule for 8-bit C1 controls.
+  `transition` lookup, and the `c1_transition` "anywhere" rule for 8-bit C1
+  controls (a C1 control cancels an OSC/DCS string and fires its exit action).
 - **`Perform` sink trait** (`perform.mbt`) — `print` / `print_bytes` /
-  `print_codepoints` / `execute` / `csi_dispatch` / `esc_dispatch` / `hook` /
-  `put` / `put_slice` / `unhook` / `osc_dispatch`, all with no-op defaults.
-- **Owned event API** (`event.mbt`) — `Event` + `Recording`.
+  `print_codepoints` / `execute` / `print_line` / `print_crlf_line` /
+  `csi_dispatch` / `esc_dispatch` / `hook` / `put` / `put_slice` / `unhook` /
+  `osc_dispatch`, all with no-op defaults.
+- **Owned event API** (`event.mbt`) — `Event` (with `PrintBytes` bulk runs and
+  CSI `sep`) + `Recording` (replay, helpers) and `Event::write_bytes`.
 - **UTF-8** (`utf8.mbt`) — W3C "Substitution of Maximal Subparts": each
   invalid maximal subpart becomes one `U+FFFD`, standalone C1 keeps `execute`
   semantics, and trailing partial code points are detected up front
@@ -23,20 +25,25 @@ the core `vtty` Rust crate.
 - **SIMD byte scans** (`simd.mbt`) — `first_non_printable` / `first_esc` via
   `@v128`, plus branchless `decode_validated`. Opt in with
   `Parser::with_simd()`.
-- **Terminal model types** (the `vtty_types` data plane) — `ColorId`
-  (`color.mbt`), `SgrFlags`/`StyleFlags`/`UnderlineStyle`/`CursorStyle`
-  (`style.mbt`), `Charset`/`Charsets`/`dec_special_graphics` (`charset.mbt`),
-  `KittyFlags` (`keyboard.mbt`), `TermFlags`/`MOUSE_MASK` (`mode.mbt`), and
-  `MouseButton`/`MouseTracking` (`mouse.mbt`).
+- **Terminal model types** (the `vtty_core` data plane) — `ColorId` + RGB
+  packing/OSC color parsing (`color.mbt`), `SgrFlags`/`StyleFlags`/
+  `UnderlineStyle`/`CursorStyle` + the `ColorSpec`/`SgrEffect`/`Sgr` effect
+  parser (`style.mbt`), `Charset`/`Charsets`/`Scs`/`dec_special_graphics`
+  (`charset.mbt`), `KittyFlags` (`keyboard.mbt`), `TermFlags`/`MOUSE_MASK`
+  (incl. DECBKM `67` / numlock `1035`, `mode.mbt`), and `MouseButton`/
+  `MouseTracking` (`mouse.mbt`).
 - **Perform-sink consumers** — `State` byte-cursor geometry (`state.mbt`),
-  `Reply` query-reply builder (`reply.mbt`), the XTGETTCAP `Cap` table
-  (`termcap.mbt`), and the OSC 7501 `ProgramStatus` parser/encoder
-  (`status.mbt`).
+  `Reply` query-reply builders (associated functions + `osc_color`/
+  `osc_palette`, `reply.mbt`), the XTGETTCAP `Cap` table with host-supplied
+  `TN` (`termcap.mbt`), and the OSC 7501 `ProgramStatus` parser/encoder +
+  `PerformProgramStatus` (`status.mbt`).
 
 ## Not ported
 
-SIMD UTF-8 window validation, `vtty_emoji` (ICU4X), `vtty_ffi` (C ABI), and
-the benchmark harness.
+SIMD UTF-8 window validation (`simd-transcode`), the float/`no_std` color
+helpers (`u32_to_rgba`, `format_osc_background`, `blend_faint`),
+`vtty_codec`, `vtty_screen`, `vtty_grapheme`, `vtty_width` (ICU4X),
+`vtty_ffi` (C ABI), and the benchmark harness.
 
 ## Usage
 

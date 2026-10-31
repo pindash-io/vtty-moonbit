@@ -299,6 +299,33 @@ pub fn ProgramStatus::from_osc_params(
 }
 
 ///|
+/// Extension for `Perform` sinks that want typed `OSC 7501` reports.
+pub(open) trait PerformProgramStatus : Perform {
+  /// Called with each valid `OSC 7501` report.
+  fn program_status(Self, ProgramStatus) -> Unit = _
+
+  /// Routes one OSC dispatch. Returns `true` when the params were a valid
+  /// `OSC 7501` report (and `program_status` was called).
+  fn route_osc_7501(Self, Array[Array[Int]]) -> Bool = _
+}
+
+///|
+impl PerformProgramStatus with fn program_status(_self, _status) {
+
+}
+
+///|
+impl PerformProgramStatus with fn route_osc_7501(self, params) {
+  match ProgramStatus::from_osc_params(params) {
+    Some(status) => {
+      self.program_status(status)
+      true
+    }
+    None => false
+  }
+}
+
+///|
 /// The full `OSC 7501 ; pairs ST` byte sequence.
 pub fn ProgramStatus::to_osc(self : ProgramStatus) -> Array[Int] {
   let out : Array[Int] = []

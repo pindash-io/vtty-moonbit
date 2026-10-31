@@ -23,6 +23,16 @@ pub(open) trait Perform {
   fn execute(Self, Int) -> Unit = _
 
   ///|
+  /// A printable ASCII run immediately followed by a bare `\n` — the raw-LF
+  /// streaming hot path. Defaults to `print_bytes` then `execute('\n')`.
+  fn print_line(Self, ArrayView[Int]) -> Unit = _
+
+  ///|
+  /// A printable ASCII run immediately followed by `\r\n` — the OPOST/PTY
+  /// streaming hot path. Defaults to `print_bytes` then CR then LF.
+  fn print_crlf_line(Self, ArrayView[Int]) -> Unit = _
+
+  ///|
   /// A CSI sequence's final byte, with collected parameters and intermediates.
   ///
   /// An empty colon parameter is the `-1` sentinel; `sep` bit `i` marks
@@ -74,6 +84,19 @@ impl Perform with fn print_codepoints(self, codepoints) {
 ///|
 impl Perform with fn execute(_self, _b) {
 
+}
+
+///|
+impl Perform with fn print_line(self, s) {
+  self.print_bytes(s)
+  self.execute(0x0a)
+}
+
+///|
+impl Perform with fn print_crlf_line(self, s) {
+  self.print_bytes(s)
+  self.execute(0x0d)
+  self.execute(0x0a)
 }
 
 ///|

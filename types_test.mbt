@@ -190,3 +190,99 @@ test "mouse encoding" {
     None,
   )
 }
+
+///|
+test "scs charset selection" {
+  let s = @vtty.Scs::ascii()
+  assert_eq(s.active(), @vtty.Charset::Ascii)
+  // Designate G2 as DEC Special Graphics and single-shift it.
+  s.designate(2, @vtty.Charset::Dec)
+  s.apply_shift(0x8e) // SS2 → single-shift G2
+  assert_eq(s.map('q'), '─')
+  // The single shift applies for one char only.
+  s.apply_shift(0x8f) // SS3 → single-shift G3 (still ASCII)
+  assert_eq(s.map('q'), 'q')
+  // A fresh SCS: SO (0x0E) locks GL to G1; SI (0x0F) back to G0.
+  let s2 = @vtty.Scs::ascii()
+  s2.designate(1, @vtty.Charset::British)
+  s2.apply_shift(0x0e) // SO → LS1
+  assert_eq(s2.map('#'), '£')
+  s2.apply_shift(0x0f) // SI → LS0
+  assert_eq(s2.map('#'), '#')
+}
+
+///|
+test "backarrow and numlock mode flags" {
+  assert_eq(@vtty.term_flags_from_private_param(67), @vtty.TERM_BACKARROW_KEY_MODE)
+  assert_eq(@vtty.term_flags_from_private_param(1035), @vtty.TERM_NUMLOCK)
+  assert_eq(@vtty.term_flags_private_param(@vtty.TERM_BACKARROW_KEY_MODE), 67)
+  assert_eq(@vtty.term_flags_private_param(@vtty.TERM_NUMLOCK), 1035)
+}
+
+///|
+test "sgr single code mapping" {
+  assert_eq(@vtty.single_code(0), Some(@vtty.SgrEffect::Reset))
+  assert_eq(
+    @vtty.single_code(4),
+    Some(@vtty.SgrEffect::Underline(@vtty.UnderlineStyle::Single)),
+  )
+  assert_eq(
+    @vtty.single_code(21),
+    Some(@vtty.SgrEffect::Underline(@vtty.UnderlineStyle::Double)),
+  )
+  assert_eq(
+    @vtty.single_code(31),
+    Some(@vtty.SgrEffect::Fg(@vtty.ColorSpec::Ansi(1))),
+  )
+  assert_eq(
+    @vtty.single_code(39),
+    Some(@vtty.SgrEffect::Fg(@vtty.ColorSpec::Default)),
+  )
+  assert_eq(
+    @vtty.single_code(44),
+    Some(@vtty.SgrEffect::Bg(@vtty.ColorSpec::Ansi(4))),
+  )
+  assert_eq(
+    @vtty.single_code(59),
+    Some(@vtty.SgrEffect::ClearUnderlineColor),
+  )
+  assert_eq(
+    @vtty.single_code(92),
+    Some(@vtty.SgrEffect::Fg(@vtty.ColorSpec::Ansi(10))),
+  )
+  assert_eq(
+    @vtty.single_code(1),
+    Some(@vtty.SgrEffect::Set(@vtty.SGR_BOLD)),
+  )
+  assert_eq(
+    @vtty.single_code(22),
+    Some(@vtty.SgrEffect::Clear(@vtty.SGR_BOLD | @vtty.SGR_FAINT)),
+  )
+  assert_eq(@vtty.single_code(99), None)
+}
+
+///|
+test "sgr parse effects extended color" {
+  let out : Array[@vtty.SgrEffect] = []
+  @vtty.parse_effects([38, 2, 255, 0, 128][:], 0, out)
+  assert_eq(
+    out,
+    [@vtty.SgrEffect::Fg(@vtty.ColorSpec::Rgb(0xff0080))],
+  )
+  let out2 : Array[@vtty.SgrEffect] = []
+  @vtty.parse_effects([4, 2][:], 0b01, out2)
+  assert_eq(
+    out2,
+    [@vtty.SgrEffect::Underline(@vtty.UnderlineStyle::Double)],
+  )
+}
+
+///|
+test "sgr write_bytes canonical" {
+  let out : Array[Int] = []
+  @vtty.Sgr::new([1, 31], 0).write_bytes(out)
+  assert_eq(out, [0x1b, 0x5b, 0x31, 0x3b, 0x33, 0x31, 0x6d])
+  let out2 : Array[Int] = []
+  @vtty.Sgr::new([4, 2], 0b01).write_bytes(out2)
+  assert_eq(out2, [0x1b, 0x5b, 0x34, 0x3a, 0x32, 0x6d])
+}

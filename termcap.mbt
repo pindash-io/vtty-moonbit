@@ -20,6 +20,8 @@ pub(all) enum CapValue {
   Rows
   /// The OS name (`query-os-name`).
   OsName
+  /// The terminal name (`TN`), supplied by the host.
+  Tn
 } derive(Eq, Debug)
 
 ///|
@@ -29,8 +31,9 @@ pub extend CapValue with Eq::{equal, not_equal}
 pub extend CapValue with @debug.Debug::{to_repr}
 
 ///|
-/// OS name for the non-standard `query-os-name` capability (the dev platform
-/// in this port).
+/// OS name for the non-standard `query-os-name` capability. The Rust crate
+/// picks this at compile time via `cfg!(target_os)`; MoonBit has no equivalent,
+/// so the port hardcodes the native dev platform.
 fn os_name() -> String {
   "macos"
 }
@@ -40,7 +43,7 @@ fn os_name() -> String {
 /// the long/short terminfo aliases. Unknown names map to `CapValue::None`.
 pub fn cap_parse(query : String) -> (String, CapValue) {
   match query {
-    "TN" | "name" => ("TN", CapValue::Text("jetfish"))
+    "TN" | "name" => ("TN", CapValue::Tn)
     "Co" | "colors" => ("Co", CapValue::Text("256"))
     "pa" | "pairs" => ("pa", CapValue::Text("32767"))
     "RGB" => ("RGB", CapValue::Text("8/8/8"))
@@ -112,25 +115,29 @@ pub fn cap_parse(query : String) -> (String, CapValue) {
 /// the `DCS … ST` reply. The query may pack several capabilities,
 /// semicolon-separated; each is answered in order.
 pub fn Reply::termcap(
-  self : Reply,
   cap : String,
   cols : Int,
   rows : Int,
-) -> Reply {
-  let mut reply = self
+  tn : String,
+) -> String {
+  let buf = StringBuilder()
   for part in cap.split(";") {
     if part.length() == 0 {
       continue
     }
     let (key, value) = cap_parse(part.to_owned())
-    reply = match value {
-      CapValue::None => reply.xtgettcap_error("unsupported")
-      CapValue::Bool => reply.xtgettcap_reply_bool(key)
-      CapValue::Text(v) => reply.xtgettcap_reply(key, v)
-      CapValue::Cols => reply.xtgettcap_num(key, cols)
-      CapValue::Rows => reply.xtgettcap_num(key, rows)
-      CapValue::OsName => reply.xtgettcap_reply(key, os_name())
+    match value {
+      CapValue::None => buf.write_string(xtgettcap(false, "unsupported", None))
+      CapValue::Bool => buf.write_string(xtgettcap(true, key, None))
+      CapValue::Text(v) => buf.write_string(xtgettcap(true, key, Some(v)))
+      CapValue::Cols =>
+        buf.write_string(xtgettcap(true, key, Some(cols.to_string())))
+      CapValue::Rows =>
+        buf.write_string(xtgettcap(true, key, Some(rows.to_string())))
+      CapValue::OsName =>
+        buf.write_string(xtgettcap(true, key, Some(os_name())))
+      CapValue::Tn => buf.write_string(xtgettcap(true, key, Some(tn)))
     }
   }
-  reply
+  buf.to_string()
 }
