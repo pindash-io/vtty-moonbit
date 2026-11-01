@@ -62,6 +62,93 @@ pub fn first_esc(bytes : ArrayView[Int]) -> Int {
 }
 
 ///|
+/// Index of the first OSC payload boundary: a C0 byte (`< 0x20`), a raw C1
+/// byte (`0x80..=0x9f`), or the `;` param separator.
+pub fn first_osc_boundary(bytes : ArrayView[Int]) -> Int {
+  let n = bytes.length()
+  // Fast path: a `;` or terminator right at the run start skips SIMD.
+  if n > 0 && is_osc_boundary(bytes[0]) {
+    return 0
+  }
+  if n > 1 && is_osc_boundary(bytes[1]) {
+    return 1
+  }
+  let mut offset = 0
+  while offset + 16 <= n {
+    let v = load16(bytes, offset)
+    // (b & 0x60) == 0 → C0 (< 0x20) or C1 (0x80..=0x9f); or b == ';'.
+    let c0c1 = @v128.i8x16_eq(
+      @v128.v128_and_(v, @v128.i8x16_splat(0x60)),
+      @v128.i8x16_splat(0),
+    )
+    let semi = @v128.i8x16_eq(v, @v128.i8x16_splat(0x3b))
+    let special = @v128.v128_or_(c0c1, semi)
+    if @v128.v128_any_true(special) {
+      return offset + first_set(@v128.i8x16_bitmask(special))
+    }
+    offset = offset + 16
+  }
+  while offset < n {
+    if is_osc_boundary(bytes[offset]) {
+      return offset
+    }
+    offset = offset + 1
+  }
+  n
+}
+
+///|
+/// Index of the first DCS payload boundary: a byte `>= 0x80`, or
+/// CAN/SUB/ESC/DEL.
+pub fn first_dcs_boundary(bytes : ArrayView[Int]) -> Int {
+  let n = bytes.length()
+  // Fast path: a terminator right at the run start skips SIMD.
+  if n > 0 && is_dcs_boundary(bytes[0]) {
+    return 0
+  }
+  if n > 1 && is_dcs_boundary(bytes[1]) {
+    return 1
+  }
+  let mut offset = 0
+  while offset + 16 <= n {
+    let v = load16(bytes, offset)
+    // b >= 0x80, or CAN/SUB/ESC/DEL.
+    let high = @v128.i8x16_ge_u(v, @v128.i8x16_splat(0x80))
+    let can = @v128.i8x16_eq(v, @v128.i8x16_splat(0x18))
+    let sub = @v128.i8x16_eq(v, @v128.i8x16_splat(0x1a))
+    let esc = @v128.i8x16_eq(v, @v128.i8x16_splat(0x1b))
+    let del = @v128.i8x16_eq(v, @v128.i8x16_splat(0x7f))
+    let special = @v128.v128_or_(
+      @v128.v128_or_(high, can),
+      @v128.v128_or_(sub, @v128.v128_or_(esc, del)),
+    )
+    if @v128.v128_any_true(special) {
+      return offset + first_set(@v128.i8x16_bitmask(special))
+    }
+    offset = offset + 16
+  }
+  while offset < n {
+    if is_dcs_boundary(bytes[offset]) {
+      return offset
+    }
+    offset = offset + 1
+  }
+  n
+}
+
+///|
+/// OSC payload boundary: C0 (`< 0x20`), C1 (`0x80..=0x9f`), or `;`.
+fn is_osc_boundary(b : Int) -> Bool {
+  (b & 0x60) == 0 || b == 0x3b
+}
+
+///|
+/// DCS passthrough boundary: `>= 0x80`, or CAN/SUB/ESC/DEL.
+fn is_dcs_boundary(b : Int) -> Bool {
+  b >= 0x80 || b == 0x18 || b == 0x1a || b == 0x1b || b == 0x7f
+}
+
+///|
 /// Branchless decode of a UTF-8 code point already validated by the caller.
 ///
 /// Assumes `b[0]` is a 2/3/4-byte lead with its continuation bytes present.

@@ -519,7 +519,11 @@ fn[P : Perform] Parser::advance_osc_run(
   i : Int,
 ) -> Int {
   let run = bytes[i:]
-  let n = first_osc_boundary(run)
+  let n = if self.simd {
+    first_osc_boundary(run)
+  } else {
+    first_osc_boundary_scalar(run)
+  }
   if n > 0 {
     if !self.osc_deferring {
       self.osc_extend(run[:n])
@@ -565,7 +569,11 @@ fn[P : Perform] Parser::advance_dcs_run(
   bytes : ArrayView[Int],
   i : Int,
 ) -> Int {
-  let n = first_dcs_boundary(bytes[i:])
+  let n = if self.simd {
+    first_dcs_boundary(bytes[i:])
+  } else {
+    first_dcs_boundary_scalar(bytes[i:])
+  }
   if n > 0 {
     p.put_slice(bytes[i:i + n])
     return i + n
@@ -943,10 +951,10 @@ fn[P : Perform] dispatch_cp(p : P, cp : Int) -> Unit {
 }
 
 ///|
-/// Index of the first byte that ends an OSC payload run: a C0 byte
-/// (`< 0x20`, including BEL/ESC), a raw C1 byte (`0x80..=0x9f`), or the `;`
-/// param separator (`0x3b`). The rest are `OSC_PUT` bytes.
-pub fn first_osc_boundary(bytes : ArrayView[Int]) -> Int {
+/// Scalar fallback: index of the first byte that ends an OSC payload run —
+/// a C0 byte (`< 0x20`, including BEL/ESC), a raw C1 byte (`0x80..=0x9f`), or
+/// the `;` param separator (`0x3b`).
+fn first_osc_boundary_scalar(bytes : ArrayView[Int]) -> Int {
   let n = bytes.length()
   let mut i = 0
   while i < n {
@@ -960,9 +968,10 @@ pub fn first_osc_boundary(bytes : ArrayView[Int]) -> Int {
 }
 
 ///|
-/// Index of the first DCS payload boundary byte (CAN/SUB/ESC/DEL or any byte
-/// `>= 0x80`), or the remaining length if every byte is a PUT byte.
-pub fn first_dcs_boundary(bytes : ArrayView[Int]) -> Int {
+/// Scalar fallback: index of the first DCS payload boundary byte
+/// (CAN/SUB/ESC/DEL or any byte `>= 0x80`), or the remaining length if every
+/// byte is a PUT byte.
+fn first_dcs_boundary_scalar(bytes : ArrayView[Int]) -> Int {
   let n = bytes.length()
   let mut i = 0
   while i < n {
