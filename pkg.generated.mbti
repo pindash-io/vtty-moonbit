@@ -294,6 +294,20 @@ pub fn ColorSpec::not_equal(Self, Self) -> Bool
 pub fn ColorSpec::rgb(Int32, Int32, Int32) -> Self
 pub fn ColorSpec::to_repr(Self) -> @debug.Repr
 
+pub(all) enum ConformanceLevel {
+  Vt100
+  Vt200
+  Vt300
+  Vt400
+  Vt500
+} derive(Eq, @debug.Debug)
+pub fn ConformanceLevel::default() -> Self
+pub fn ConformanceLevel::equal(Self, Self) -> Bool
+pub fn ConformanceLevel::from_param(Int32) -> Self?
+pub fn ConformanceLevel::not_equal(Self, Self) -> Bool
+pub fn ConformanceLevel::param(Self) -> Int32
+pub fn ConformanceLevel::to_repr(Self) -> @debug.Repr
+
 pub(all) enum CursorStyle {
   None
   Block
@@ -444,8 +458,15 @@ pub impl Perform for Recording
 
 pub struct Reply {
 }
+pub fn Reply::da1(ArrayView[Int32]) -> String
+pub fn Reply::da2(Int32, Int32, Int32) -> String
+pub fn Reply::da3(ArrayView[Int32]) -> String
+pub fn Reply::deccir(String) -> String
+pub fn Reply::decctr(Array[(Int32, Int32, Int32, Int32)]) -> String
 pub fn Reply::decrqm(Int32, Bool, Int32) -> String
 pub fn Reply::decrqss(Bool, String) -> String
+pub fn Reply::dectabsr(ArrayView[Int32]) -> String
+pub fn Reply::dectsr(String) -> String
 pub fn Reply::osc_color(Int32, Int32) -> String
 pub fn Reply::osc_palette(Int32, Int32) -> String
 pub fn Reply::sgr(ColorId, ColorId, Int32, ArrayView[Int32]) -> String
@@ -454,6 +475,7 @@ pub fn Reply::xtgettcap_error(String) -> String
 pub fn Reply::xtgettcap_num(String, Int32) -> String
 pub fn Reply::xtgettcap_reply(String, String) -> String
 pub fn Reply::xtgettcap_reply_bool(String) -> String
+pub fn Reply::xtversion(String, String) -> String
 
 pub struct Scs {
   charsets : Charsets

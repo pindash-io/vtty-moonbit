@@ -252,6 +252,50 @@ test "event write_bytes roundtrips through the parser" {
 }
 
 ///|
+test "reply conformance builders" {
+  // DA1: service class + extensions (EK-VT520-RM §5-9 example shape).
+  assert_eq(
+    @vtty.Reply::da1([65, 1, 2, 7, 9, 12, 18, 19, 21, 23][:]),
+    "\u{1b}[?65;1;2;7;9;12;18;19;21;23c",
+  )
+  // DA2: id;firmware;keyboard (EK-VT520-RM §5-11 example).
+  assert_eq(@vtty.Reply::da2(64, 20, 1), "\u{1b}[>64;20;1c")
+  // DA3: unit ID as hex byte pairs (EK-VT520-RM §5-12 example).
+  assert_eq(
+    @vtty.Reply::da3([0x00, 0x01, 0x02, 0x05][:]),
+    "\u{1b}P!|00010205\u{1b}\\",
+  )
+  // DECTSR: lowercase `s` final (EK-VT510-RM errata).
+  assert_eq(
+    @vtty.Reply::dectsr("?64;1;2;7;8;9;15;18;21c"),
+    "\u{1b}P1$s?64;1;2;7;8;9;15;18;21c\u{1b}\\",
+  )
+  assert_eq(@vtty.Reply::dectsr(""), "\u{1b}P1$s\u{1b}\\")
+  // XTVERSION.
+  assert_eq(
+    @vtty.Reply::xtversion("jetfish", "0.1"),
+    "\u{1b}P>|jetfish 0.1\u{1b}\\",
+  )
+  // DECCTR: 8-bit RGB scales to 0-100: 255→100, 0→0, 128→50.
+  assert_eq(
+    @vtty.Reply::decctr([(0, 255, 0, 0), (7, 0, 128, 255)]),
+    "\u{1b}P2$s0;2;100;0;0/7;2;0;50;100\u{1b}\\",
+  )
+  assert_eq(@vtty.Reply::decctr([]), "\u{1b}P2$s\u{1b}\\")
+  // DECCIR.
+  assert_eq(
+    @vtty.Reply::deccir("1;3;7;0;0;0;0"),
+    "\u{1b}P1$u1;3;7;0;0;0;0\u{1b}\\",
+  )
+  // DECTABSR: the EK-VT520-RM §5-157 example.
+  assert_eq(
+    @vtty.Reply::dectabsr([9, 17, 25, 33, 41, 49, 57, 65, 73][:]),
+    "\u{1b}P2$u9/17/25/33/41/49/57/65/73\u{1b}\\",
+  )
+  assert_eq(@vtty.Reply::dectabsr([][:]), "\u{1b}P2$u\u{1b}\\")
+}
+
+///|
 test "recording replay forwards every event" {
   let rec = @vtty.Recording::new()
   rec.print_char('A')

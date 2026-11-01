@@ -286,3 +286,40 @@ test "sgr write_bytes canonical" {
   @vtty.Sgr::new([4, 2], 0b01).write_bytes(out2)
   assert_eq(out2, [0x1b, 0x5b, 0x34, 0x3a, 0x32, 0x6d])
 }
+
+///|
+test "conformance level roundtrip" {
+  assert_eq(
+    @vtty.ConformanceLevel::from_param(61),
+    Some(@vtty.ConformanceLevel::Vt100),
+  )
+  assert_eq(
+    @vtty.ConformanceLevel::from_param(62),
+    Some(@vtty.ConformanceLevel::Vt200),
+  )
+  assert_eq(
+    @vtty.ConformanceLevel::from_param(63),
+    Some(@vtty.ConformanceLevel::Vt300),
+  )
+  assert_eq(
+    @vtty.ConformanceLevel::from_param(64),
+    Some(@vtty.ConformanceLevel::Vt400),
+  )
+  assert_eq(
+    @vtty.ConformanceLevel::from_param(65),
+    Some(@vtty.ConformanceLevel::Vt500),
+  )
+  assert_eq(@vtty.ConformanceLevel::from_param(0), None)
+  assert_eq(@vtty.ConformanceLevel::from_param(60), None)
+  assert_eq(@vtty.ConformanceLevel::from_param(66), None)
+  assert_eq(@vtty.ConformanceLevel::Vt100.param(), 61)
+  assert_eq(@vtty.ConformanceLevel::Vt200.param(), 62)
+  assert_eq(@vtty.ConformanceLevel::Vt300.param(), 63)
+  assert_eq(@vtty.ConformanceLevel::Vt400.param(), 64)
+  assert_eq(@vtty.ConformanceLevel::Vt500.param(), 65)
+  // Factory default.
+  assert_eq(
+    @vtty.ConformanceLevel::default(),
+    @vtty.ConformanceLevel::Vt500,
+  )
+}

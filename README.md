@@ -30,13 +30,16 @@ the core `vtty` Rust crate.
   `UnderlineStyle`/`CursorStyle` + the `ColorSpec`/`SgrEffect`/`Sgr` effect
   parser (`style.mbt`), `Charset`/`Charsets`/`Scs`/`dec_special_graphics`
   (`charset.mbt`), `KittyFlags` (`keyboard.mbt`), `TermFlags`/`MOUSE_MASK`
-  (incl. DECBKM `67` / numlock `1035`, `mode.mbt`), and `MouseButton`/
-  `MouseTracking` (`mouse.mbt`).
+  (incl. DECBKM `67` / numlock `1035`, `mode.mbt`), `MouseButton`/
+  `MouseTracking` (`mouse.mbt`), and `ConformanceLevel` DECSCL levels
+  (`conformance.mbt`).
 - **Perform-sink consumers** — `State` byte-cursor geometry (`state.mbt`),
   `Reply` query-reply builders (associated functions + `osc_color`/
-  `osc_palette`, `reply.mbt`), the XTGETTCAP `Cap` table with host-supplied
-  `TN` (`termcap.mbt`), and the OSC 7501 `ProgramStatus` parser/encoder +
-  `PerformProgramStatus` (`status.mbt`).
+  `osc_palette`, `reply.mbt`) including the conformance reports `da1`/`da2`/
+  `da3`/`dectsr`/`xtversion`/`decctr`/`deccir`/`dectabsr` (`conformance.mbt`),
+  the XTGETTCAP `Cap` table with host-supplied `TN` (`termcap.mbt`), and the
+  OSC 7501 `ProgramStatus` parser/encoder + `PerformProgramStatus`
+  (`status.mbt`).
 
 ## Not ported
 
