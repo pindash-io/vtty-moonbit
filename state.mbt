@@ -114,11 +114,13 @@ pub fn State::cursor_row(self : State) -> Int {
 }
 
 ///|
-/// 0-based BYTE column of the cursor within its line.
+/// 0-based BYTE column of the cursor within its line. Clamps to `0` when
+/// the fields are inconsistent, mirroring `cursor_row`.
 pub fn State::cursor_col(self : State) -> Int {
   let len = string_byte_len(self.text)
   let cursor = if self.cursor < len { self.cursor } else { len }
-  cursor - self.line_start
+  let col = cursor - self.line_start
+  if col > 0 { col } else { 0 }
 }
 
 ///|
